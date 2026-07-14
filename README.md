@@ -2,6 +2,10 @@
 
 Application statique d’apprentissage HTML/PHP, compatible avec GitHub Pages.
 
+## Accéder à l’application
+
+**[Ouvrir CodeQuest Academy](https://kalarma.github.io/CodeQuest-Academy/)**
+
 ## Publier sur GitHub Pages
 
 1. Créez un dépôt GitHub et ajoutez `index.html` à la racine.
@@ -17,4 +21,3 @@ La progression, les brouillons et le mode de navigation sont enregistrés dans l
 ## Utilisation mobile
 
 La barre inférieure permet de passer entre **Cours**, **Code** et **Résultat**. Quand le clavier virtuel est ouvert, l’aperçu est temporairement masqué pour laisser le maximum de place à l’éditeur.
-
