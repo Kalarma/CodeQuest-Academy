@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CodeQuest Academy — apprenez HTML et PHP en relevant des missions interactives.">
+  <title>CodeQuest Academy</title>
+
+  <!-- Tailwind est chargé par CDN pour permettre un test immédiat sans build. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: { 950: '#080b12', 900: '#0d111b', 850: '#111725', 800: '#171e2e' },
+            brand: { 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9' }
+          },
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            mono: ['JetBrains Mono', 'Fira Code', 'ui-monospace', 'monospace']
+          },
+          boxShadow: { glow: '0 0 32px rgba(14, 165, 233, .13)' }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CodeMirror 5 : modes HTML/PHP, autocomplétion, fermeture de balises et parenthèses. -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+
+  <style>
+    :root { color-scheme: dark; }
+    * { scrollbar-width: thin; scrollbar-color: #34415a #0d111b; }
+    body { background: #080b12; }
+    .CodeMirror {
+      height: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      background: #0d111b !important;
+    }
+    .CodeMirror-gutters { background: #0d111b !important; border-right: 1px solid #202a3d; }
+    .CodeMirror-linenumber { color: #526078 !important; }
+    .CodeMirror-activeline-background { background: rgba(56, 189, 248, .055) !important; }
+    .CodeMirror-cursor { border-left: 2px solid #38bdf8 !important; }
+    .cm-s-material-darker .cm-tag { color: #f472b6; }
+    .cm-s-material-darker .cm-attribute { color: #fbbf24; }
+    .cm-s-material-darker .cm-string { color: #a7f3d0; }
+    /* Les erreurs restent visibles sans masquer le code sous un bloc rouge opaque. */
+    .cm-s-material-darker .cm-error,
+    .cm-s-material-darker .CodeMirror-nonmatchingbracket,
+    .cm-s-material-darker .CodeMirror-nonmatchingtag {
+      background: rgba(244, 63, 94, .08) !important;
+      color: #fda4af !important;
+      text-decoration: underline wavy rgba(251, 113, 133, .9);
+      text-underline-offset: 3px;
+    }
+    .CodeMirror-selected,
+    .CodeMirror-focused .CodeMirror-selected { background: rgba(56, 189, 248, .18) !important; }
+    .lesson-copy code { color: #7dd3fc; background: #171e2e; padding: .12rem .35rem; border-radius: .3rem; font-family: 'JetBrains Mono', monospace; font-size: .86em; }
+    .lesson-copy strong { color: #f8fafc; font-weight: 600; }
+    .fade-up { animation: fadeUp .28s ease-out both; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
+    .modal-backdrop { backdrop-filter: blur(8px); }
+    .status-dot { box-shadow: 0 0 0 3px rgba(52, 211, 153, .12); }
+    .mobile-tabbar { display: none; }
+    @media (max-width: 900px) {
+      html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+      body > div { height: 100dvh; min-height: 0; }
+      header { height: 3.5rem !important; padding-inline: .75rem !important; }
+      #workspace { display: block; height: calc(100dvh - 7.15rem) !important; min-height: 0; }
+      #lesson-panel, #practice-panel { height: 100%; min-height: 0; border-right: 0; }
+      body:not([data-mobile-view]) #lesson-panel,
+      body[data-mobile-view="course"] #lesson-panel { display: flex; }
+      body:not([data-mobile-view]) #practice-panel,
+      body[data-mobile-view="course"] #practice-panel { display: none; }
+      body[data-mobile-view="code"] #lesson-panel,
+      body[data-mobile-view="result"] #lesson-panel { display: none; }
+      body[data-mobile-view="code"] #practice-panel,
+      body[data-mobile-view="result"] #practice-panel { display: flex; }
+
+      .mobile-tabbar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        height: 3.65rem;
+        flex-shrink: 0;
+        border-top: 1px solid #253047;
+        background: rgba(13, 17, 27, .98);
+        padding: .25rem max(.35rem, env(safe-area-inset-right)) max(.25rem, env(safe-area-inset-bottom)) max(.35rem, env(safe-area-inset-left));
+        z-index: 40;
+      }
+      .mobile-view-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; border-radius: .6rem; color: #64748b; font-size: .64rem; font-weight: 700; transition: .2s; }
+      .mobile-view-button > span:first-child { font-family: 'JetBrains Mono', monospace; font-size: .75rem; }
+      .mobile-view-button.active { background: rgba(14, 165, 233, .1); color: #7dd3fc; }
+
+      #lesson-panel > div:nth-child(3) { padding: 1.15rem 1rem 1.5rem; }
+      #lesson-content { max-width: none; }
+      #lesson-title { font-size: 1.55rem; }
+      #lesson-explanation { margin-top: 1.25rem; }
+      #lesson-content > div:nth-of-type(3) { margin-top: 1.5rem; }
+      #lesson-dots { max-width: 48vw; overflow: hidden; }
+
+      body[data-mobile-view="code"] #editor-shell { min-height: 0; flex: 1 1 auto; }
+      body[data-mobile-view="code"] #output-panel { min-height: 130px; max-height: 30%; flex: 0 0 30%; }
+      body[data-mobile-view="result"] #editor-shell,
+      body[data-mobile-view="result"] #editor-actions { display: none; }
+      body[data-mobile-view="result"] #output-panel { min-height: 0; flex: 1 1 auto; }
+      body[data-mobile-view="result"] #practice-panel > div:first-child { display: none; }
+      #editor-actions { padding: .5rem .75rem; }
+      #editor-actions p { max-width: 55%; font-size: .58rem; line-height: 1rem; }
+      #run-btn { padding: .65rem .8rem; }
+      .CodeMirror { font-size: 13px; line-height: 1.6; }
+
+      body.keyboard-open #output-panel { display: none !important; }
+      body.keyboard-open #editor-shell { flex: 1 1 auto !important; min-height: 0; }
+      body.keyboard-open #editor-actions p { display: none; }
+      body.keyboard-open #editor-actions { justify-content: flex-end; padding-block: .35rem; }
+      body.keyboard-open #run-btn { padding-block: .5rem; }
+
+      #glossary-modal { padding: 0; }
+      #glossary-modal > div { height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+    }
+    @media (max-width: 720px) {
+      #book-layout { grid-template-columns: 1fr; }
+      #book-sidebar { max-height: 210px; border-right: 0; border-bottom: 1px solid #334155; }
+      #book-detail { padding: 1.1rem; }
+    }
+  </style>
+</head>
+<body class="min-h-screen overflow-x-hidden font-sans text-slate-200 antialiased">
+  <div class="flex min-h-screen flex-col">
+    <header class="flex h-16 shrink-0 items-center justify-between border-b border-slate-800/80 bg-ink-900 px-4 sm:px-6">
+      <div class="flex items-center gap-3">
+        <div class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-400 to-indigo-500 font-mono text-sm font-bold text-white shadow-glow">CQ</div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight text-white sm:text-base">CodeQuest <span class="text-brand-400">Academy</span></h1>
+          <p class="hidden text-[10px] uppercase tracking-[.22em] text-slate-500 sm:block">Learn · Code · Conquer</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 sm:gap-5">
+        <div class="hidden min-w-44 sm:block">
+          <div class="mb-1.5 flex justify-between text-[11px] font-medium text-slate-400">
+            <span>Progression</span><span id="progress-label">0 / 6</span>
+          </div>
+          <div class="h-1.5 overflow-hidden rounded-full bg-slate-800"><div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-brand-500 to-indigo-400 transition-all duration-500" style="width: 0%"></div></div>
+        </div>
+        <button id="reset-btn" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-slate-600 hover:bg-slate-800 hover:text-white" title="Réinitialiser la progression"><span class="hidden sm:inline">Réinitialiser</span><span class="sm:hidden">↺</span></button>
+      </div>
+    </header>
+
+    <main id="workspace" class="grid min-h-0 flex-1 grid-cols-[minmax(340px,42%)_minmax(0,58%)]" style="height: calc(100vh - 4rem)">
+      <!-- PANNEAU PÉDAGOGIQUE -->
+      <section id="lesson-panel" class="flex min-h-0 flex-col border-r border-slate-800 bg-ink-850">
+        <div class="flex items-center justify-between border-b border-slate-800/80 px-5 py-3">
+          <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span class="status-dot h-2 w-2 rounded-full bg-emerald-400"></span>
+            Parcours interactif
+          </div>
+          <button id="glossary-btn" class="flex items-center gap-2 rounded-lg border border-slate-700/80 bg-slate-800/60 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-brand-500/50 hover:text-brand-300">
+            <span aria-hidden="true">▤</span> Livre des leçons
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 border-b border-slate-800/80 bg-ink-900/40 px-4 py-2.5">
+          <label for="lesson-selector" class="shrink-0 text-[10px] font-bold uppercase tracking-widest text-slate-500">Leçon</label>
+          <select id="lesson-selector" class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-ink-900 px-3 py-2 text-xs font-semibold text-slate-200 outline-none transition focus:border-brand-500" aria-label="Choisir librement une leçon"></select>
+          <button id="navigation-mode-btn" class="shrink-0 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-[10px] font-bold text-slate-300 transition hover:border-brand-500/50 hover:text-brand-300" title="Changer le mode de navigation">Guidé 🔒</button>
+        </div>
+
+        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8">
+          <div id="lesson-content" class="fade-up mx-auto max-w-2xl">
+            <div class="mb-5 flex items-center gap-2">
+              <span id="language-badge" class="rounded-md border border-orange-400/20 bg-orange-400/10 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-orange-300">HTML</span>
+              <span id="lesson-number" class="text-xs font-medium text-slate-500">Leçon 1 sur 6</span>
+            </div>
+            <h2 id="lesson-title" class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl"></h2>
+            <p id="lesson-subtitle" class="mt-2 text-sm leading-relaxed text-slate-400"></p>
+
+            <div id="lesson-explanation" class="lesson-copy mt-7 space-y-4 text-sm leading-7 text-slate-300"></div>
+
+            <div class="mt-8 rounded-xl border border-brand-500/25 bg-gradient-to-br from-brand-500/10 to-indigo-500/5 p-5 shadow-glow">
+              <div class="mb-3 flex items-center gap-2">
+                <span class="grid h-7 w-7 place-items-center rounded-lg bg-brand-500/15 text-sm">⚑</span>
+                <h3 class="text-xs font-extrabold uppercase tracking-[.18em] text-brand-300">Votre mission</h3>
+              </div>
+              <p id="mission-text" class="text-sm font-medium leading-6 text-slate-100"></p>
+              <ul id="requirements-list" class="mt-4 space-y-2"></ul>
+            </div>
+
+            <div class="mt-6 rounded-xl border border-amber-400/15 bg-amber-400/[.04] p-4">
+              <p class="text-xs leading-5 text-amber-100/70"><span class="mr-1.5">💡</span><span id="lesson-tip"></span></p>
+            </div>
+          </div>
+        </div>
+
+        <nav class="flex items-center justify-between border-t border-slate-800 bg-ink-900/70 px-5 py-3">
+          <button id="prev-btn" class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-30">← Précédent</button>
+          <div id="lesson-dots" class="flex items-center gap-1.5" aria-label="Navigation des leçons"></div>
+          <button id="next-btn" class="rounded-lg px-3 py-2 text-xs font-semibold text-slate-400 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-30">Suivant →</button>
+        </nav>
+      </section>
+
+      <!-- PANNEAU PRATIQUE -->
+      <section id="practice-panel" class="flex min-h-0 flex-col bg-ink-950">
+        <div class="flex h-11 shrink-0 items-center justify-between border-b border-slate-800 bg-ink-900 px-4">
+          <div class="flex h-full items-center">
+            <div class="flex h-full items-center gap-2 border-b-2 border-brand-400 px-3 font-mono text-xs text-slate-200">
+              <span id="file-icon" class="font-bold text-orange-400">&lt;/&gt;</span>
+              <span id="file-name">index.html</span>
+              <span class="ml-1 text-slate-600">×</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[10px] text-slate-500"><span>UTF-8</span><span>•</span><span>Spaces: 2</span></div>
+        </div>
+
+        <div id="editor-shell" class="relative min-h-[280px] flex-[3] overflow-hidden border-b border-slate-800">
+          <textarea id="code-editor" aria-label="Éditeur de code"></textarea>
+          <div id="code-suggestion" class="pointer-events-none absolute bottom-3 right-4 z-20 hidden max-w-[calc(100%-2rem)] items-center gap-3 rounded-lg border border-brand-400/30 bg-ink-800/95 px-3 py-2 font-mono text-[11px] shadow-xl shadow-black/30">
+            <span class="text-slate-500">Suggestion</span>
+            <span id="suggestion-value" class="truncate text-brand-300"></span>
+            <kbd class="rounded border border-slate-600 bg-ink-950 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">Tab ↹</kbd>
+          </div>
+        </div>
+
+        <div id="editor-actions" class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-ink-900 px-4 py-3">
+          <p class="font-mono text-[11px] text-slate-500"><kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Ctrl</kbd> + <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Espace</kbd> pour les balises · <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Tab</kbd> pour accepter une suggestion</p>
+          <button id="run-btn" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-brand-500/15 transition hover:-translate-y-0.5 hover:bg-brand-400 active:translate-y-0">
+            <span aria-hidden="true">▶</span> Exécuter &amp; Vérifier
+          </button>
+        </div>
+
+        <div id="output-panel" class="flex min-h-[205px] flex-[2] flex-col bg-[#0a0e17]">
+          <div class="flex h-10 shrink-0 items-center gap-5 border-b border-slate-800 px-5 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+            <button id="result-tab" class="flex h-full items-center gap-2 border-b-2 border-brand-400 text-slate-200"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>Aperçu en direct</button>
+            <span>Console</span>
+          </div>
+          <div id="result-area" class="relative min-h-0 flex-1 overflow-auto p-4">
+            <div id="empty-state" class="grid h-full min-h-28 place-items-center text-center">
+              <div><div class="mb-2 text-2xl opacity-30">▶</div><p class="text-xs text-slate-600">Exécutez votre code pour voir le résultat</p></div>
+            </div>
+            <div id="feedback" class="hidden fade-up"></div>
+            <iframe id="html-preview" class="hidden h-full min-h-40 w-full rounded-lg border border-slate-700 bg-white" sandbox title="Prévisualisation HTML"></iframe>
+          </div>
+        </div>
+
+        <footer class="flex h-6 shrink-0 items-center justify-between bg-[#087ca7] px-3 font-mono text-[10px] text-white/90">
+          <span>⑂ main&nbsp;&nbsp; ✓ 0 erreurs</span><span>CodeQuest Runtime&nbsp;&nbsp;⌁</span>
+        </footer>
+      </section>
+    </main>
+
+    <nav id="mobile-tabbar" class="mobile-tabbar" aria-label="Navigation mobile">
+      <button data-mobile-view="course" class="mobile-view-button active"><span>▤</span><span>Cours</span></button>
+      <button data-mobile-view="code" class="mobile-view-button"><span>&lt;/&gt;</span><span>Code</span></button>
+      <button data-mobile-view="result" class="mobile-view-button"><span>▶</span><span>Résultat</span></button>
+    </nav>
+  </div>
+
+  <!-- LIVRE DES LEÇONS : sommaire progressif et fiches détaillées. -->
+  <div id="glossary-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="glossary-title">
+    <div class="fade-up flex h-[min(820px,90vh)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-ink-850 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+        <div><h2 id="glossary-title" class="font-bold text-white">Livre des leçons</h2><p class="mt-0.5 text-xs text-slate-500">Relisez chaque notion et débloquez les chapitres au fil de votre progression.</p></div>
+        <div class="ml-auto mr-4 hidden items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-xs text-slate-400 sm:flex"><span class="text-emerald-400">●</span><span id="book-progress">0 / 18 débloquées</span></div>
+        <button id="close-glossary" class="grid h-9 w-9 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-700 hover:text-white" aria-label="Fermer">✕</button>
+      </div>
+      <div id="book-layout" class="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)]">
+        <aside id="book-sidebar" class="flex min-h-0 flex-col border-r border-slate-700/80 bg-ink-900/50">
+          <div class="border-b border-slate-700/70 p-3"><input id="glossary-search" type="search" placeholder="Rechercher une leçon…" class="w-full rounded-lg border border-slate-700 bg-ink-950 px-3 py-2.5 text-xs text-white outline-none placeholder:text-slate-600 focus:border-brand-500"></div>
+          <div id="glossary-list" class="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3" aria-label="Sommaire des leçons"></div>
+        </aside>
+        <article id="book-detail" class="min-h-0 overflow-y-auto p-5 sm:p-8"></article>
+      </div>
+    </div>
+  </div>
+
+  <!-- CodeMirror et ses modules. L'ordre de chargement des modes est important pour PHP. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closetag.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
+
+  <script>
+    'use strict';
+
+    /* ================================================================
+       1. DONNÉES PÉDAGOGIQUES
+       Pour ajouter un langage : créez une entrée dans `languages`, puis
+       ajoutez ses leçons avec un mode CodeMirror et des règles de validation.
+       ================================================================ */
+    const COURSE_CATALOG = {
+      languages: {
+        html: { label: 'HTML', extension: 'html', fileName: 'index.html', mode: 'htmlmixed', color: 'orange', icon: '</>' },
+        php:  { label: 'PHP', extension: 'php', fileName: 'index.php', mode: 'application/x-httpd-php', color: 'indigo', icon: '<?>' }
+        // Futur exemple : javascript: { label: 'JavaScript', extension: 'js', fileName: 'app.js', mode: 'javascript', ... }
+      },
+      lessons: [
+        {
+          id: 'html-01-title', language: 'html', title: 'Votre première page', subtitle: 'Posez les fondations d’un document web.',
+          explanation: [
+            'Le <strong>HTML</strong> décrit la structure d’une page. Chaque élément est représenté par une <strong>balise</strong>, généralement composée d’une ouverture et d’une fermeture.',
+            'La balise <code>&lt;h1&gt;</code> représente le titre principal. Une page ne devrait en posséder qu’un seul : il indique immédiatement son sujet.'
+          ],
+          mission: 'Créez un titre principal qui affiche exactement « Bonjour CodeQuest ! ».',
+          requirements: ['Utiliser une balise <code>&lt;h1&gt;</code>', 'Afficher le texte <strong>Bonjour CodeQuest !</strong>'],
+          tip: 'Les balises fonctionnent comme une boîte : <code>&lt;h1&gt;</code> ouvre la boîte et <code>&lt;/h1&gt;</code> la ferme.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <head>\n    <meta charset="UTF-8">\n    <title>Ma première page</title>\n  </head>\n  <body>\n    <!-- Écrivez votre titre ici -->\n    \n  </body>\n</html>',
+          rules: [
+            { regex: /<h1\b[^>]*>[\s\S]*?<\/h1>/i, hint: 'Ajoutez une balise <h1>…</h1>.' },
+            { regex: /<h1\b[^>]*>\s*Bonjour\s+CodeQuest\s*!\s*<\/h1>/i, hint: 'Le titre doit contenir exactement « Bonjour CodeQuest ! ».' }
+          ]
+        },
+        {
+          id: 'html-02-paragraph', language: 'html', title: 'Donner du contexte', subtitle: 'Structurez du contenu avec titres et paragraphes.',
+          explanation: [
+            'La balise <code>&lt;p&gt;</code> crée un paragraphe. Elle aide le navigateur et les technologies d’assistance à comprendre qu’un texte forme une unité.',
+            'Une structure claire associe souvent un titre à un ou plusieurs paragraphes explicatifs.'
+          ],
+          mission: 'Sous le titre existant, ajoutez un paragraphe contenant « J’apprends le HTML. ».',
+          requirements: ['Conserver le titre <code>&lt;h1&gt;</code>', 'Ajouter une balise <code>&lt;p&gt;</code>', 'Respecter le texte demandé'],
+          tip: 'Placez le paragraphe après la fermeture <code>&lt;/h1&gt;</code>, toujours à l’intérieur de <code>&lt;body&gt;</code>.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <h1>Mon parcours</h1>\n    <!-- Ajoutez le paragraphe ici -->\n  </body>\n</html>',
+          rules: [
+            { regex: /<h1\b[^>]*>[\s\S]*?<\/h1>/i, hint: 'Ne supprimez pas le titre <h1> existant.' },
+            { regex: /<p\b[^>]*>\s*J[’']apprends\s+le\s+HTML\s*\.\s*<\/p>/i, hint: 'Ajoutez un <p> contenant « J’apprends le HTML. ».' }
+          ]
+        },
+        {
+          id: 'html-03-link', language: 'html', title: 'Créer un passage', subtitle: 'Reliez les pages avec un lien hypertexte.',
+          explanation: [
+            'La balise d’ancrage <code>&lt;a&gt;</code> crée un lien. Son attribut <code>href</code> indique la destination à ouvrir.',
+            'Le texte entre les balises doit décrire la destination, ce qui rend le lien plus clair et accessible.'
+          ],
+          mission: 'Créez un lien « Visiter OpenAI » pointant vers https://openai.com.',
+          requirements: ['Utiliser la balise <code>&lt;a&gt;</code>', 'Définir <code>href="https://openai.com"</code>', 'Afficher <strong>Visiter OpenAI</strong>'],
+          tip: 'Un attribut est écrit dans la balise ouvrante : <code>&lt;a href="adresse"&gt;Texte&lt;/a&gt;</code>.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <h1>Mes ressources</h1>\n    <!-- Créez le lien ici -->\n  </body>\n</html>',
+          rules: [
+            { regex: /<a\b[^>]*href\s*=\s*["']https:\/\/openai\.com\/?["'][^>]*>/i, hint: 'Votre lien doit avoir href="https://openai.com".' },
+            { regex: /<a\b[^>]*>\s*Visiter\s+OpenAI\s*<\/a>/i, hint: 'Le texte visible du lien doit être « Visiter OpenAI ».' }
+          ]
+        },
+        {
+          id: 'php-01-variable', language: 'php', title: 'Stocker une information', subtitle: 'Découvrez les variables PHP.',
+          explanation: [
+            'En <strong>PHP</strong>, une variable commence par le symbole <code>$</code>. Elle permet de nommer et mémoriser une valeur.',
+            'Une instruction se termine par un point-virgule. Par exemple : <code>$score = 10;</code>.'
+          ],
+          mission: 'Créez une variable $prenom contenant « Ada », puis affichez-la avec echo.',
+          requirements: ['Déclarer <code>$prenom = "Ada";</code>', 'Utiliser <code>echo $prenom;</code>', 'Conserver les balises PHP'],
+          tip: 'PHP accepte les chaînes entre guillemets simples ou doubles.',
+          starter: '<?php\n// Créez la variable puis affichez-la\n\n?>',
+          rules: [
+            { regex: /<\?php[\s\S]*\$prenom\s*=\s*["']Ada["']\s*;/i, hint: 'Déclarez $prenom et affectez-lui la chaîne « Ada ».' },
+            { regex: /echo\s+\$prenom\s*;/i, hint: 'Affichez ensuite la variable avec echo $prenom;' }
+          ],
+          output: 'Ada'
+        },
+        {
+          id: 'php-02-condition', language: 'php', title: 'Prendre une décision', subtitle: 'Exécutez du code selon une condition.',
+          explanation: [
+            'La structure <code>if</code> teste une expression. Si elle est vraie, PHP exécute le bloc placé entre accolades.',
+            'L’opérateur <code>&gt;=</code> signifie « supérieur ou égal à ». Il est utile pour comparer des nombres.'
+          ],
+          mission: 'Si $age est supérieur ou égal à 18, affichez « Accès autorisé ».',
+          requirements: ['Utiliser <code>if ($age >= 18)</code>', 'Écrire un bloc avec des accolades', 'Afficher <strong>Accès autorisé</strong> avec <code>echo</code>'],
+          tip: 'La condition est placée entre parenthèses, puis le code à exécuter entre accolades.',
+          starter: '<?php\n$age = 21;\n\n// Ajoutez votre condition ici\n\n?>',
+          rules: [
+            { regex: /if\s*\(\s*\$age\s*>=\s*18\s*\)\s*\{/i, hint: 'Écrivez la condition if ($age >= 18) suivie d’une accolade.' },
+            { regex: /if\s*\([\s\S]*?\)\s*\{[\s\S]*?echo\s+["']Accès\s+autorisé["']\s*;[\s\S]*?\}/i, hint: 'Dans le bloc if, affichez « Accès autorisé » avec echo.' }
+          ],
+          output: 'Accès autorisé'
+        },
+        {
+          id: 'php-03-loop', language: 'php', title: 'Répéter sans se répéter', subtitle: 'Automatisez une tâche avec une boucle.',
+          explanation: [
+            'Une boucle <code>for</code> répète un bloc un nombre connu de fois. Elle combine une valeur de départ, une condition et une incrémentation.',
+            'Avec <code>$i++</code>, la valeur de <code>$i</code> augmente de 1 après chaque passage.'
+          ],
+          mission: 'Créez une boucle for qui affiche les nombres de 1 à 3 avec echo.',
+          requirements: ['Initialiser <code>$i</code> à 1', 'Continuer tant que <code>$i &lt;= 3</code>', 'Incrémenter avec <code>$i++</code>', 'Afficher <code>$i</code>'],
+          tip: 'La forme attendue commence par <code>for ($i = 1; $i &lt;= 3; $i++)</code>.',
+          starter: '<?php\n// Affichez les nombres de 1 à 3\n\n?>',
+          rules: [
+            { regex: /for\s*\(\s*\$i\s*=\s*1\s*;\s*\$i\s*<=\s*3\s*;\s*\$i\+\+\s*\)/i, hint: 'Vérifiez les trois parties de la boucle for : départ, condition et incrémentation.' },
+            { regex: /for\s*\([\s\S]*?\)\s*\{[\s\S]*?echo\s+\$i\s*;?[\s\S]*?\}/i, hint: 'Dans la boucle, affichez la variable $i avec echo.' }
+          ],
+          output: '123'
+        },
+        {
+          id: 'html-04-image', language: 'html', title: 'Afficher une image', subtitle: 'Enrichissez la page avec un contenu visuel.',
+          explanation: [
+            'La balise <code>&lt;img&gt;</code> utilise <code>src</code> pour la source et <code>alt</code> pour décrire l’image.',
+            'Le texte alternatif est indispensable lorsque l’image ne se charge pas ou pour un lecteur d’écran.'
+          ],
+          mission: 'Ajoutez une image avatar.png dont le texte alternatif est exactement « Portrait de profil ».',
+          requirements: ['Utiliser une balise <code>&lt;img&gt;</code>', 'Définir <code>src="avatar.png"</code>', 'Ajouter <code>alt="Portrait de profil"</code>'],
+          tip: 'La balise img est orpheline : elle ne possède pas de balise fermante.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <h1>Mon profil</h1>\n    <!-- Ajoutez l’image -->\n  </body>\n</html>',
+          assistTexts: ['Portrait de profil'],
+          rules: [
+            { regex: /<img\b[^>]*>/i, hint: 'Ajoutez une balise <img>.' },
+            { regex: /<img\b[^>]*src\s*=\s*["']avatar\.png["'][^>]*>/i, hint: 'La source doit être avatar.png.' },
+            { regex: /<img\b[^>]*alt\s*=\s*["']Portrait de profil["'][^>]*>/i, hint: 'Ajoutez le texte alternatif « Portrait de profil ».' }
+          ]
+        },
+        {
+          id: 'html-05-list', language: 'html', title: 'Organiser une liste', subtitle: 'Regroupez des éléments qui appartiennent au même ensemble.',
+          explanation: [
+            '<code>&lt;ul&gt;</code> crée une liste non ordonnée et chaque élément est placé dans une balise <code>&lt;li&gt;</code>.',
+            'Une liste apporte une structure sémantique plus utile qu’une suite de paragraphes.'
+          ],
+          mission: 'Créez une liste contenant exactement « HTML », « CSS » et « PHP ».',
+          requirements: ['Créer une liste <code>&lt;ul&gt;</code>', 'Ajouter trois éléments <code>&lt;li&gt;</code>', 'Afficher HTML, CSS et PHP'],
+          tip: 'Les trois balises li doivent être placées à l’intérieur de ul.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <h1>Langages à apprendre</h1>\n    \n  </body>\n</html>',
+          assistTexts: ['HTML', 'CSS', 'PHP'],
+          rules: [
+            { regex: /<ul\b[^>]*>[\s\S]*<\/ul>/i, hint: 'Entourez la liste avec <ul> et </ul>.' },
+            { regex: /<li\b[^>]*>\s*HTML\s*<\/li>[\s\S]*<li\b[^>]*>\s*CSS\s*<\/li>[\s\S]*<li\b[^>]*>\s*PHP\s*<\/li>/i, hint: 'Ajoutez les trois éléments HTML, CSS et PHP dans cet ordre.' }
+          ]
+        },
+        {
+          id: 'html-06-semantic', language: 'html', title: 'Structurer sémantiquement', subtitle: 'Donnez du sens aux grandes zones de la page.',
+          explanation: [
+            '<code>&lt;header&gt;</code>, <code>&lt;main&gt;</code> et <code>&lt;footer&gt;</code> décrivent le rôle des différentes régions.',
+            'Cette structure facilite la lecture du code, le référencement et l’accessibilité.'
+          ],
+          mission: 'Créez header, main et footer. Le footer doit afficher exactement « Tous droits réservés ».',
+          requirements: ['Ajouter <code>&lt;header&gt;</code>', 'Ajouter <code>&lt;main&gt;</code>', 'Ajouter un <code>&lt;footer&gt;</code> avec le texte demandé'],
+          tip: 'Ces trois zones sont sœurs et se placent directement dans body.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <!-- Structurez la page -->\n  </body>\n</html>',
+          assistTexts: ['Tous droits réservés'],
+          rules: [
+            { regex: /<header\b[^>]*>[\s\S]*<\/header>[\s\S]*<main\b[^>]*>[\s\S]*<\/main>/i, hint: 'Ajoutez header puis main avec leurs balises fermantes.' },
+            { regex: /<footer\b[^>]*>\s*Tous droits réservés\s*<\/footer>/i, hint: 'Le footer doit contenir « Tous droits réservés ».' }
+          ]
+        },
+        {
+          id: 'html-07-form', language: 'html', title: 'Collecter une information', subtitle: 'Créez votre premier formulaire accessible.',
+          explanation: [
+            'Un champ <code>&lt;input&gt;</code> reçoit une valeur. Un <code>&lt;label&gt;</code> explique ce qui est attendu.',
+            'Les attributs <code>for</code> et <code>id</code> relient le libellé à son champ.'
+          ],
+          mission: 'Créez un champ email associé au libellé exact « Votre adresse email ».',
+          requirements: ['Créer un <code>&lt;form&gt;</code>', 'Ajouter un label lié au champ', 'Utiliser un input de type <code>email</code>'],
+          tip: 'Utilisez la même valeur pour for sur le label et id sur l’input.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <form>\n      <!-- Ajoutez le label et le champ -->\n    </form>\n  </body>\n</html>',
+          assistTexts: ['Votre adresse email'],
+          rules: [
+            { regex: /<label\b[^>]*for\s*=\s*["']email["'][^>]*>\s*Votre adresse email\s*<\/label>/i, hint: 'Créez le label « Votre adresse email » avec for="email".' },
+            { regex: /<input\b[^>]*id\s*=\s*["']email["'][^>]*type\s*=\s*["']email["'][^>]*>|<input\b[^>]*type\s*=\s*["']email["'][^>]*id\s*=\s*["']email["'][^>]*>/i, hint: 'Ajoutez un input avec id="email" et type="email".' }
+          ]
+        },
+        {
+          id: 'html-08-table', language: 'html', title: 'Présenter des données', subtitle: 'Construisez un tableau lisible.',
+          explanation: [
+            '<code>&lt;table&gt;</code> contient des lignes <code>&lt;tr&gt;</code>. Les cellules d’en-tête utilisent <code>&lt;th&gt;</code>.',
+            'Les données ordinaires sont placées dans des cellules <code>&lt;td&gt;</code>.'
+          ],
+          mission: 'Créez un tableau avec les en-têtes exacts « Langage » et « Niveau ».',
+          requirements: ['Créer <code>&lt;table&gt;</code>', 'Ajouter une ligne <code>&lt;tr&gt;</code>', 'Ajouter les deux cellules <code>&lt;th&gt;</code> demandées'],
+          tip: 'Placez les deux th dans la même ligne tr.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <!-- Créez le tableau -->\n  </body>\n</html>',
+          assistTexts: ['Langage', 'Niveau'],
+          rules: [
+            { regex: /<table\b[^>]*>[\s\S]*<\/table>/i, hint: 'Ajoutez une balise table complète.' },
+            { regex: /<tr\b[^>]*>[\s\S]*<th\b[^>]*>\s*Langage\s*<\/th>[\s\S]*<th\b[^>]*>\s*Niveau\s*<\/th>[\s\S]*<\/tr>/i, hint: 'Ajoutez Langage et Niveau dans deux cellules th.' }
+          ]
+        },
+        {
+          id: 'html-09-accessibility', language: 'html', title: 'Rendre un bouton explicite', subtitle: 'Terminez le module HTML avec une interface accessible.',
+          explanation: [
+            'Un bouton doit annoncer clairement son action. L’attribut <code>type="button"</code> évite une soumission involontaire dans un formulaire.',
+            'Un texte précis et orienté action est plus compréhensible qu’un vague « Cliquez ici ».'
+          ],
+          mission: 'Créez un bouton de type button affichant exactement « Commencer la mission ».',
+          requirements: ['Utiliser <code>&lt;button&gt;</code>', 'Définir <code>type="button"</code>', 'Afficher le texte demandé'],
+          tip: 'Le texte visible se place entre les balises button ouvrante et fermante.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <!-- Ajoutez le bouton -->\n  </body>\n</html>',
+          assistTexts: ['Commencer la mission'],
+          rules: [
+            { regex: /<button\b[^>]*type\s*=\s*["']button["'][^>]*>/i, hint: 'Ajoutez type="button" dans la balise ouvrante.' },
+            { regex: /<button\b[^>]*>\s*Commencer la mission\s*<\/button>/i, hint: 'Le bouton doit afficher « Commencer la mission ».' }
+          ]
+        },
+        {
+          id: 'php-04-concat', language: 'php', title: 'Assembler du texte', subtitle: 'Combinez plusieurs valeurs avec la concaténation.',
+          explanation: [
+            'En PHP, le point <code>.</code> assemble des chaînes de caractères et des variables.',
+            'Vous pouvez ainsi produire une phrase dynamique à partir de plusieurs morceaux.'
+          ],
+          mission: 'Concaténez $prenom avec le texte exact « Bienvenue » et affichez le résultat.',
+          requirements: ['Conserver la variable <code>$prenom</code>', 'Utiliser l’opérateur <code>.</code>', 'Afficher le texte Bienvenue'],
+          tip: 'Par exemple : echo "Texte " . $variable;',
+          starter: '<?php\n$prenom = "Ada";\n// Affichez : Bienvenue Ada\n\n?>',
+          assistTexts: ['Bienvenue'],
+          rules: [
+            { regex: /\$prenom\s*=\s*["']Ada["']\s*;/i, hint: 'Conservez la variable $prenom contenant Ada.' },
+            { regex: /echo\s+["']Bienvenue\s*["']\s*\.\s*\$prenom\s*;/i, hint: 'Concaténez « Bienvenue » et $prenom avec un point.' }
+          ], output: 'Bienvenue Ada'
+        },
+        {
+          id: 'php-05-array', language: 'php', title: 'Regrouper des valeurs', subtitle: 'Stockez plusieurs éléments dans un tableau PHP.',
+          explanation: [
+            'Un tableau PHP rassemble plusieurs valeurs dans une seule variable.',
+            'La syntaxe courte utilise des crochets : <code>$outils = ["HTML", "PHP"];</code>.'
+          ],
+          mission: 'Créez $langages contenant exactement « HTML », « CSS » et « PHP ».',
+          requirements: ['Créer la variable <code>$langages</code>', 'Utiliser les crochets', 'Ajouter les trois textes demandés'],
+          tip: 'Séparez chaque chaîne par une virgule.',
+          starter: '<?php\n// Créez le tableau $langages\n\n?>',
+          assistTexts: ['HTML', 'CSS', 'PHP'],
+          rules: [
+            { regex: /\$langages\s*=\s*\[/i, hint: 'Créez $langages avec la syntaxe à crochets.' },
+            { regex: /\$langages\s*=\s*\[\s*["']HTML["']\s*,\s*["']CSS["']\s*,\s*["']PHP["']\s*\]\s*;/i, hint: 'Ajoutez HTML, CSS et PHP dans cet ordre.' }
+          ], output: 'Array(HTML, CSS, PHP)'
+        },
+        {
+          id: 'php-06-foreach', language: 'php', title: 'Parcourir un tableau', subtitle: 'Traitez chaque élément avec foreach.',
+          explanation: [
+            '<code>foreach</code> visite chaque valeur d’un tableau sans gérer manuellement un compteur.',
+            'À chaque passage, la valeur courante est placée dans une variable temporaire.'
+          ],
+          mission: 'Parcourez $langages avec foreach et affichez chaque $langage.',
+          requirements: ['Utiliser <code>foreach</code>', 'Créer la variable temporaire <code>$langage</code>', 'Afficher chaque valeur avec <code>echo</code>'],
+          tip: 'La structure commence par foreach ($langages as $langage).',
+          starter: '<?php\n$langages = ["HTML", "CSS", "PHP"];\n// Parcourez le tableau\n\n?>',
+          rules: [
+            { regex: /foreach\s*\(\s*\$langages\s+as\s+\$langage\s*\)\s*\{/i, hint: 'Utilisez foreach ($langages as $langage) avec une accolade.' },
+            { regex: /foreach[\s\S]*\{[\s\S]*echo\s+\$langage\s*;[\s\S]*\}/i, hint: 'Affichez $langage dans la boucle.' }
+          ], output: 'HTMLCSSPHP'
+        },
+        {
+          id: 'php-07-function', language: 'php', title: 'Créer une fonction', subtitle: 'Rendez votre code réutilisable.',
+          explanation: [
+            'Une fonction regroupe une action sous un nom afin de pouvoir la réutiliser.',
+            'Elle peut recevoir des paramètres et retourner une valeur avec <code>return</code>.'
+          ],
+          mission: 'Créez saluer($nom), qui retourne le texte exact « Bonjour » concaténé avec $nom.',
+          requirements: ['Déclarer <code>function saluer($nom)</code>', 'Utiliser <code>return</code>', 'Concaténer Bonjour avec <code>$nom</code>'],
+          tip: 'Le mot-clé return renvoie le résultat sans l’afficher directement.',
+          starter: '<?php\n// Créez la fonction saluer\n\n?>',
+          assistTexts: ['Bonjour'],
+          rules: [
+            { regex: /function\s+saluer\s*\(\s*\$nom\s*\)\s*\{/i, hint: 'Déclarez function saluer($nom) avec une accolade.' },
+            { regex: /return\s+["']Bonjour\s*["']\s*\.\s*\$nom\s*;/i, hint: 'Retournez « Bonjour » concaténé avec $nom.' }
+          ], output: 'Bonjour Ada'
+        },
+        {
+          id: 'php-08-associative', language: 'php', title: 'Nommer les données', subtitle: 'Utilisez les clés d’un tableau associatif.',
+          explanation: [
+            'Un tableau associatif relie chaque valeur à une clé descriptive.',
+            'L’opérateur <code>=&gt;</code> associe une clé à sa valeur.'
+          ],
+          mission: 'Créez $profil avec la clé nom valant exactement « Ada » et la clé niveau valant 1.',
+          requirements: ['Créer <code>$profil</code>', 'Ajouter la clé <code>nom</code>', 'Ajouter la clé <code>niveau</code>'],
+          tip: 'Écrivez chaque paire sous la forme "clé" => valeur.',
+          starter: '<?php\n// Créez le profil\n\n?>',
+          assistTexts: ['Ada'],
+          rules: [
+            { regex: /\$profil\s*=\s*\[/i, hint: 'Créez le tableau $profil.' },
+            { regex: /["']nom["']\s*=>\s*["']Ada["'][\s\S]*["']niveau["']\s*=>\s*1/i, hint: 'Ajoutez nom => Ada et niveau => 1.' }
+          ], output: 'Ada — niveau 1'
+        },
+        {
+          id: 'php-09-form-data', language: 'php', title: 'Lire un formulaire', subtitle: 'Récupérez une valeur envoyée à PHP.',
+          explanation: [
+            'La superglobale <code>$_GET</code> contient les paramètres reçus dans l’URL.',
+            'L’opérateur <code>??</code> fournit une valeur de secours lorsque la donnée est absente.'
+          ],
+          mission: 'Stockez $_GET["nom"] dans $nom avec « Visiteur » comme valeur par défaut, puis affichez $nom.',
+          requirements: ['Lire <code>$_GET["nom"]</code>', 'Utiliser <code>??</code>', 'Prévoir le texte Visiteur', 'Afficher <code>$nom</code>'],
+          tip: 'La valeur de secours se place après ??.',
+          starter: '<?php\n// Récupérez le nom ou utilisez Visiteur\n\n?>',
+          assistTexts: ['Visiteur'],
+          rules: [
+            { regex: /\$nom\s*=\s*\$_GET\s*\[\s*["']nom["']\s*\]\s*\?\?\s*["']Visiteur["']\s*;/i, hint: 'Affectez $_GET["nom"] ?? "Visiteur" à $nom.' },
+            { regex: /echo\s+\$nom\s*;/i, hint: 'Affichez ensuite $nom avec echo.' }
+          ], output: 'Visiteur'
+        },
+        {
+          id: 'html-10-navigation', language: 'html', title: 'Construire une navigation', subtitle: 'Regroupez les liens principaux du site.',
+          explanation: ['La balise <code>&lt;nav&gt;</code> identifie une zone de navigation importante.', 'Un attribut <code>aria-label</code> aide à distinguer plusieurs navigations sur la même page.'],
+          mission: 'Créez une navigation aria-label="Principale" contenant un lien « Accueil » vers index.html.',
+          requirements: ['Ajouter <code>&lt;nav aria-label="Principale"&gt;</code>', 'Créer un lien vers <code>index.html</code>', 'Afficher le texte Accueil'],
+          tip: 'Placez le lien à l’intérieur de la balise nav.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <!-- Navigation principale -->\n  </body>\n</html>',
+          assistTexts: ['Principale', 'Accueil'], tabCompletions: ['index.html'],
+          rules: [
+            { regex: /<nav\b[^>]*aria-label\s*=\s*["']Principale["'][^>]*>/i, hint: 'Ajoutez nav avec aria-label="Principale".' },
+            { regex: /<nav[\s\S]*<a\b[^>]*href\s*=\s*["']index\.html["'][^>]*>\s*Accueil\s*<\/a>[\s\S]*<\/nav>/i, hint: 'Ajoutez le lien Accueil vers index.html dans nav.' }
+          ]
+        },
+        {
+          id: 'html-11-figure', language: 'html', title: 'Légender une image', subtitle: 'Associez une illustration à sa description.',
+          explanation: ['<code>&lt;figure&gt;</code> regroupe un média autonome avec sa légende.', '<code>&lt;figcaption&gt;</code> donne un contexte visible à l’image.'],
+          mission: 'Ajoutez photo.jpg dans figure avec la légende exacte « Mon premier projet ».',
+          requirements: ['Créer <code>&lt;figure&gt;</code>', 'Ajouter l’image <code>photo.jpg</code>', 'Ajouter un <code>&lt;figcaption&gt;</code>'],
+          tip: 'L’image et figcaption doivent être placés dans figure.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <!-- Ajoutez la figure -->\n  </body>\n</html>',
+          assistTexts: ['Mon premier projet'], tabCompletions: ['photo.jpg'],
+          rules: [
+            { regex: /<figure\b[^>]*>[\s\S]*<img\b[^>]*src\s*=\s*["']photo\.jpg["'][^>]*>[\s\S]*<\/figure>/i, hint: 'Placez photo.jpg dans une balise figure.' },
+            { regex: /<figcaption\b[^>]*>\s*Mon premier projet\s*<\/figcaption>/i, hint: 'Ajoutez la légende « Mon premier projet ».' }
+          ]
+        },
+        {
+          id: 'html-12-details', language: 'html', title: 'Créer un contenu dépliable', subtitle: 'Affichez une information à la demande.',
+          explanation: ['<code>&lt;details&gt;</code> crée un panneau natif ouvrable sans JavaScript.', 'Son <code>&lt;summary&gt;</code> sert de titre cliquable et doit rester explicite.'],
+          mission: 'Créez un panneau details dont le résumé est « Voir la réponse » et le contenu « Paris ».',
+          requirements: ['Utiliser <code>&lt;details&gt;</code>', 'Ajouter <code>&lt;summary&gt;</code>', 'Afficher Paris dans le panneau'],
+          tip: 'Summary doit être le premier enfant de details.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <h1>Question</h1>\n    \n  </body>\n</html>',
+          assistTexts: ['Voir la réponse', 'Paris'],
+          rules: [
+            { regex: /<details\b[^>]*>[\s\S]*<summary\b[^>]*>\s*Voir la réponse\s*<\/summary>/i, hint: 'Ajoutez details puis le résumé « Voir la réponse ».' },
+            { regex: /<details[\s\S]*Paris[\s\S]*<\/details>/i, hint: 'Placez Paris dans le panneau details.' }
+          ]
+        },
+        {
+          id: 'html-13-progress', language: 'html', title: 'Afficher une progression', subtitle: 'Représentez une valeur comprise dans une plage.',
+          explanation: ['La balise <code>&lt;progress&gt;</code> affiche une progression mesurable.', '<code>value</code> indique la valeur actuelle et <code>max</code> la valeur maximale.'],
+          mission: 'Créez une barre progress avec value="60" et max="100".',
+          requirements: ['Utiliser <code>&lt;progress&gt;</code>', 'Définir la valeur à 60', 'Définir le maximum à 100'],
+          tip: 'Ajoutez aussi le texte 60 % entre les balises pour fournir une alternative.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <label>Progression du cours</label>\n    \n  </body>\n</html>',
+          rules: [
+            { regex: /<progress\b[^>]*value\s*=\s*["']60["'][^>]*max\s*=\s*["']100["'][^>]*>|<progress\b[^>]*max\s*=\s*["']100["'][^>]*value\s*=\s*["']60["'][^>]*>/i, hint: 'Ajoutez value="60" et max="100" à progress.' },
+            { regex: /<progress\b[^>]*>[\s\S]*<\/progress>/i, hint: 'Fermez la balise progress.' }
+          ]
+        },
+        {
+          id: 'html-14-responsive', language: 'html', title: 'Préparer le mobile', subtitle: 'Adaptez correctement la largeur de la page.',
+          explanation: ['La balise meta viewport indique au téléphone comment dimensionner la page.', 'Sans elle, un navigateur mobile peut simuler un écran de bureau et réduire tout le contenu.'],
+          mission: 'Ajoutez la meta viewport avec content="width=device-width, initial-scale=1.0".',
+          requirements: ['Placer la balise dans <code>&lt;head&gt;</code>', 'Utiliser <code>name="viewport"</code>', 'Définir width et initial-scale'],
+          tip: 'Meta est une balise orpheline placée dans head.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <head>\n    <meta charset="UTF-8">\n    <!-- Préparez le mobile -->\n  </head>\n  <body></body>\n</html>',
+          tabCompletions: ['width=device-width, initial-scale=1.0'],
+          rules: [
+            { regex: /<head>[\s\S]*<meta\b[^>]*name\s*=\s*["']viewport["'][^>]*>[\s\S]*<\/head>/i, hint: 'Ajoutez meta name="viewport" dans head.' },
+            { regex: /<meta\b[^>]*content\s*=\s*["'][^"']*width\s*=\s*device-width[^"']*initial-scale\s*=\s*1(?:\.0)?[^"']*["'][^>]*>/i, hint: 'Définissez width=device-width et initial-scale=1.0.' }
+          ]
+        },
+        {
+          id: 'html-15-validation', language: 'html', title: 'Valider un formulaire', subtitle: 'Utilisez les contrôles natifs du navigateur.',
+          explanation: ['L’attribut <code>required</code> empêche l’envoi d’un champ vide.', '<code>minlength</code> impose un nombre minimal de caractères avant la soumission.'],
+          mission: 'Créez un champ texte pseudo obligatoire avec minlength="3".',
+          requirements: ['Ajouter un champ texte', 'Utiliser <code>name="pseudo"</code>', 'Ajouter required et minlength="3"'],
+          tip: 'Les attributs booléens comme required n’ont pas besoin de valeur.',
+          starter: '<!DOCTYPE html>\n<html lang="fr">\n  <body>\n    <form>\n      <!-- Champ pseudo -->\n    </form>\n  </body>\n</html>',
+          rules: [
+            { regex: /<input\b[^>]*name\s*=\s*["']pseudo["'][^>]*>/i, hint: 'Ajoutez un input avec name="pseudo".' },
+            { regex: /<input\b(?=[^>]*\brequired\b)(?=[^>]*minlength\s*=\s*["']3["'])[^>]*>/i, hint: 'Ajoutez required et minlength="3".' }
+          ]
+        },
+        {
+          id: 'php-10-else', language: 'php', title: 'Prévoir une alternative', subtitle: 'Réagissez lorsque la condition est fausse.',
+          explanation: ['Le bloc <code>else</code> est exécuté quand la condition du if est fausse.', 'Il permet de couvrir les deux chemins possibles d’une décision.'],
+          mission: 'Si $score est supérieur ou égal à 10 affichez « Gagné », sinon affichez « Réessayez ».',
+          requirements: ['Tester <code>$score >= 10</code>', 'Ajouter un bloc <code>else</code>', 'Afficher les deux messages'],
+          tip: 'Else se place immédiatement après l’accolade fermante du if.',
+          starter: '<?php\n$score = 7;\n// Ajoutez la condition complète\n\n?>',
+          assistTexts: ['Gagné', 'Réessayez'],
+          rules: [
+            { regex: /if\s*\(\s*\$score\s*>=\s*10\s*\)\s*\{[\s\S]*echo\s+["']Gagné["']\s*;/i, hint: 'Dans if, affichez « Gagné ».' },
+            { regex: /else\s*\{[\s\S]*echo\s+["']Réessayez["']\s*;[\s\S]*\}/i, hint: 'Dans else, affichez « Réessayez ».' }
+          ], output: 'Réessayez'
+        },
+        {
+          id: 'php-11-while', language: 'php', title: 'Répéter avec while', subtitle: 'Continuez tant qu’une condition reste vraie.',
+          explanation: ['La boucle <code>while</code> vérifie sa condition avant chaque passage.', 'Il faut modifier la variable testée pour éviter une boucle infinie.'],
+          mission: 'Avec $i initialisé à 1, affichez 1 à 3 dans une boucle while.',
+          requirements: ['Initialiser <code>$i = 1</code>', 'Tester <code>$i <= 3</code>', 'Afficher puis incrémenter $i'],
+          tip: 'N’oubliez pas $i++ dans le bloc.',
+          starter: '<?php\n$i = 1;\n// Créez la boucle while\n\n?>',
+          rules: [
+            { regex: /while\s*\(\s*\$i\s*<=\s*3\s*\)\s*\{/i, hint: 'Créez while ($i <= 3).' },
+            { regex: /while[\s\S]*\{[\s\S]*echo\s+\$i\s*;[\s\S]*\$i\+\+\s*;[\s\S]*\}/i, hint: 'Affichez $i puis incrémentez-la.' }
+          ], output: '123'
+        },
+        {
+          id: 'php-12-strings', language: 'php', title: 'Mesurer un texte', subtitle: 'Utilisez une fonction intégrée sur une chaîne.',
+          explanation: ['La fonction <code>strlen()</code> retourne le nombre d’octets d’une chaîne simple.', 'Son résultat peut être stocké, comparé ou affiché.'],
+          mission: 'Stockez la longueur de « CodeQuest » dans $longueur avec strlen, puis affichez-la.',
+          requirements: ['Appeler <code>strlen("CodeQuest")</code>', 'Stocker le résultat dans <code>$longueur</code>', 'Afficher la variable'],
+          tip: 'Placez la chaîne entre les parenthèses de strlen.',
+          starter: '<?php\n// Mesurez le mot CodeQuest\n\n?>',
+          assistTexts: ['CodeQuest'],
+          rules: [
+            { regex: /\$longueur\s*=\s*strlen\s*\(\s*["']CodeQuest["']\s*\)\s*;/i, hint: 'Affectez strlen("CodeQuest") à $longueur.' },
+            { regex: /echo\s+\$longueur\s*;/i, hint: 'Affichez $longueur.' }
+          ], output: '9'
+        },
+        {
+          id: 'php-13-array-count', language: 'php', title: 'Compter un tableau', subtitle: 'Découvrez combien d’éléments sont stockés.',
+          explanation: ['La fonction <code>count()</code> retourne le nombre d’éléments d’un tableau.', 'Elle est utile pour vérifier si une collection est vide ou dimensionner une boucle.'],
+          mission: 'Utilisez count sur $missions et affichez le résultat.',
+          requirements: ['Conserver le tableau <code>$missions</code>', 'Appeler <code>count($missions)</code>', 'Afficher le résultat'],
+          tip: 'Vous pouvez afficher directement echo count($missions);',
+          starter: '<?php\n$missions = ["HTML", "PHP", "Git"];\n// Comptez les missions\n\n?>',
+          rules: [
+            { regex: /count\s*\(\s*\$missions\s*\)/i, hint: 'Appelez count($missions).' },
+            { regex: /echo\s+(?:count\s*\(\s*\$missions\s*\)|\$\w+)\s*;/i, hint: 'Affichez le nombre obtenu.' }
+          ], output: '3'
+        },
+        {
+          id: 'php-14-typed-function', language: 'php', title: 'Typer une fonction', subtitle: 'Précisez les données attendues et retournées.',
+          explanation: ['Un type devant un paramètre documente et contrôle la valeur reçue.', 'Le type placé après <code>:</code> indique ce que la fonction doit retourner.'],
+          mission: 'Créez additionner(int $a, int $b): int et retournez leur somme.',
+          requirements: ['Créer la fonction <code>additionner</code>', 'Typer les deux paramètres en int', 'Déclarer le retour int et retourner $a + $b'],
+          tip: 'La signature se termine par : int avant l’accolade.',
+          starter: '<?php\n// Créez une addition typée\n\n?>',
+          rules: [
+            { regex: /function\s+additionner\s*\(\s*int\s+\$a\s*,\s*int\s+\$b\s*\)\s*:\s*int\s*\{/i, hint: 'Écrivez la signature typée complète.' },
+            { regex: /return\s+\$a\s*\+\s*\$b\s*;/i, hint: 'Retournez $a + $b.' }
+          ], output: 'Résultat numérique'
+        },
+        {
+          id: 'php-15-filter', language: 'php', title: 'Valider une adresse email', subtitle: 'Ne faites jamais confiance aux données reçues.',
+          explanation: ['<code>filter_var</code> peut vérifier qu’une valeur respecte le format d’une adresse email.', '<code>FILTER_VALIDATE_EMAIL</code> renvoie la valeur ou false si le format est invalide.'],
+          mission: 'Validez $email avec filter_var et FILTER_VALIDATE_EMAIL dans une condition if.',
+          requirements: ['Conserver la variable <code>$email</code>', 'Utiliser <code>filter_var</code>', 'Passer <code>FILTER_VALIDATE_EMAIL</code>', 'Créer une condition if'],
+          tip: 'Le résultat de filter_var peut être testé directement dans if.',
+          starter: '<?php\n$email = "ada@example.com";\n// Validez l’adresse\n\n?>',
+          tabCompletions: ['FILTER_VALIDATE_EMAIL'],
+          rules: [
+            { regex: /if\s*\(\s*filter_var\s*\(\s*\$email\s*,\s*FILTER_VALIDATE_EMAIL\s*\)\s*\)\s*\{/i, hint: 'Testez filter_var($email, FILTER_VALIDATE_EMAIL) dans if.' },
+            { regex: /if[\s\S]*\{[\s\S]*echo\s+["'][^"']+["']\s*;[\s\S]*\}/i, hint: 'Affichez un message dans le bloc if.' }
+          ], output: 'Adresse valide'
+        }
+      ]
+    };
+
+    // Le catalogue reste organisé par langage même lorsque de nouvelles leçons sont ajoutées plus tard dans le fichier.
+    const LANGUAGE_ORDER = ['html', 'php'];
+    COURSE_CATALOG.lessons.sort((a, b) => {
+      const languageDifference = LANGUAGE_ORDER.indexOf(a.language) - LANGUAGE_ORDER.indexOf(b.language);
+      if (languageDifference !== 0) return languageDifference;
+      const numberA = Number(a.id.match(/\d+/)?.[0] || 0);
+      const numberB = Number(b.id.match(/\d+/)?.[0] || 0);
+      return numberA - numberB;
+    });
+
+    // Textes exacts des premières leçons, séparés pour préserver la simplicité des données historiques.
+    const ASSIST_TEXTS_BY_LESSON = {
+      'html-01-title': ['Bonjour CodeQuest !'],
+      'html-02-paragraph': ["J'apprends le HTML."],
+      'html-03-link': ['Visiter OpenAI'],
+      'php-01-variable': ['Ada'],
+      'php-02-condition': ['Accès autorisé']
+    };
+
+    // Complétions techniques proposées à partir de 20 % et acceptées avec Tab.
+    const TAB_COMPLETIONS_BY_LESSON = {
+      'html-03-link': ['https://openai.com'],
+      'html-04-image': ['avatar.png']
+    };
+
+    /* Le glossaire est indépendant des leçons et filtrable par langage. */
+    const GLOSSARY = [
+      { term: 'Attribut', category: 'HTML', definition: 'Information ajoutée dans une balise ouvrante pour préciser son comportement, comme href dans un lien.', example: '<a href="page.html">' },
+      { term: 'Balise', category: 'HTML', definition: 'Marqueur qui délimite et décrit un élément HTML.', example: '<p>Un paragraphe</p>' },
+      { term: 'Élément', category: 'HTML', definition: 'Ensemble formé par une balise ouvrante, son contenu et sa balise fermante.', example: '<h1>Titre</h1>' },
+      { term: 'Variable', category: 'PHP', definition: 'Nom associé à une valeur qui peut être utilisée ou modifiée dans le programme.', example: '$nom = "Ada";' },
+      { term: 'Condition', category: 'PHP', definition: 'Expression évaluée comme vraie ou fausse pour décider quel code exécuter.', example: 'if ($score > 10) { … }' },
+      { term: 'Boucle', category: 'PHP', definition: 'Structure qui répète automatiquement un bloc de code.', example: 'for ($i = 0; $i < 3; $i++)' },
+      { term: 'Chaîne de caractères', category: 'Général', definition: 'Suite de caractères représentant du texte, généralement entourée de guillemets.', example: '"Bonjour"' },
+      { term: 'Syntaxe', category: 'Général', definition: 'Ensemble des règles d’écriture d’un langage de programmation.', example: 'Chaque instruction PHP finit par ;' }
+    ];
+
+    /* ================================================================
+       2. ÉTAT ET SAUVEGARDE
+       ================================================================ */
+    const STORAGE_KEY = 'codequest-academy-progress-v1';
+    const defaultState = { currentLessonId: COURSE_CATALOG.lessons[0].id, lastCompletedLessonId: null, completedLessonIds: [], drafts: {}, navigationMode: 'guided' };
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved || !COURSE_CATALOG.lessons.some(l => l.id === saved.currentLessonId)) return structuredClone(defaultState);
+        return { ...structuredClone(defaultState), ...saved, completedLessonIds: saved.completedLessonIds || [], drafts: saved.drafts || {} };
+      } catch { return structuredClone(defaultState); }
+    }
+
+    let state = loadState();
+    let currentIndex = Math.max(0, COURSE_CATALOG.lessons.findIndex(l => l.id === state.currentLessonId));
+    currentIndex = Math.min(currentIndex, getAccessibleLessonIndex());
+    let selectedBookIndex = currentIndex;
+    let draftSaveTimer;
+    let liveUpdateTimer;
+    let isApplyingAssist = false;
+    let pendingTabCompletion = null;
+
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    function getUnlockedLessonIndex() {
+      let firstIncomplete = 0;
+      while (firstIncomplete < COURSE_CATALOG.lessons.length && state.completedLessonIds.includes(COURSE_CATALOG.lessons[firstIncomplete].id)) {
+        firstIncomplete++;
+      }
+      return Math.min(firstIncomplete, COURSE_CATALOG.lessons.length - 1);
+    }
+
+    function getUnlockedLessonCount() {
+      const allCompleted = COURSE_CATALOG.lessons.every(lesson => state.completedLessonIds.includes(lesson.id));
+      return allCompleted ? COURSE_CATALOG.lessons.length : getUnlockedLessonIndex() + 1;
+    }
+
+    function getAccessibleLessonIndex() {
+      return state.navigationMode === 'free' ? COURSE_CATALOG.lessons.length - 1 : getUnlockedLessonIndex();
+    }
+
+    function populateLessonSelector() {
+      let html = '';
+      for (const languageId of LANGUAGE_ORDER) {
+        const language = COURSE_CATALOG.languages[languageId];
+        html += `<optgroup label="Module ${language.label}">`;
+        COURSE_CATALOG.lessons.forEach((lesson, index) => {
+          if (lesson.language === languageId) html += `<option value="${index}">${index + 1}. ${escapeHtml(lesson.title)}</option>`;
+        });
+        html += '</optgroup>';
+      }
+      $('lesson-selector').innerHTML = html;
+    }
+
+    function renderNavigationMode() {
+      const isFree = state.navigationMode === 'free';
+      $('navigation-mode-btn').textContent = isFree ? 'Libre 🔓' : 'Guidé 🔒';
+      $('navigation-mode-btn').classList.toggle('text-brand-300', isFree);
+      $('lesson-selector').value = String(currentIndex);
+    }
+
+    /* ================================================================
+       3. ÉDITEUR ET RENDU DE L'INTERFACE
+       ================================================================ */
+    const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+      theme: 'material-darker', mode: 'htmlmixed', lineNumbers: true, lineWrapping: false,
+      indentUnit: 2, tabSize: 2, indentWithTabs: false, autoCloseTags: true,
+      autoCloseBrackets: true, styleActiveLine: true, matchBrackets: true,
+      extraKeys: {
+        'Ctrl-Space': 'autocomplete',
+        'Tab': cm => {
+          if (acceptTabCompletion()) return;
+          return cm.somethingSelected() ? cm.indentSelection('add') : cm.execCommand('insertSoftTab');
+        }
+      }
+    });
+
+    const $ = id => document.getElementById(id);
+    const els = {
+      lessonContent: $('lesson-content'), languageBadge: $('language-badge'), lessonNumber: $('lesson-number'),
+      lessonTitle: $('lesson-title'), lessonSubtitle: $('lesson-subtitle'), lessonExplanation: $('lesson-explanation'),
+      missionText: $('mission-text'), requirementsList: $('requirements-list'), lessonTip: $('lesson-tip'),
+      fileName: $('file-name'), fileIcon: $('file-icon'), prevBtn: $('prev-btn'), nextBtn: $('next-btn'),
+      lessonDots: $('lesson-dots'), progressBar: $('progress-bar'), progressLabel: $('progress-label'),
+      emptyState: $('empty-state'), feedback: $('feedback'), preview: $('html-preview'), resultArea: $('result-area'),
+      codeSuggestion: $('code-suggestion'), suggestionValue: $('suggestion-value')
+    };
+
+    function currentLesson() { return COURSE_CATALOG.lessons[currentIndex]; }
+
+    function renderLesson() {
+      const lesson = currentLesson();
+      const language = COURSE_CATALOG.languages[lesson.language];
+      state.currentLessonId = lesson.id;
+      saveState();
+
+      els.lessonContent.classList.remove('fade-up');
+      void els.lessonContent.offsetWidth;
+      els.lessonContent.classList.add('fade-up');
+      els.languageBadge.textContent = language.label;
+      els.languageBadge.className = `rounded-md border px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider ${lesson.language === 'php' ? 'border-indigo-400/20 bg-indigo-400/10 text-indigo-300' : 'border-orange-400/20 bg-orange-400/10 text-orange-300'}`;
+      els.lessonNumber.textContent = `Leçon ${currentIndex + 1} sur ${COURSE_CATALOG.lessons.length}`;
+      els.lessonTitle.textContent = lesson.title;
+      els.lessonSubtitle.textContent = lesson.subtitle;
+      els.lessonExplanation.innerHTML = lesson.explanation.map(p => `<p>${p}</p>`).join('');
+      els.missionText.textContent = lesson.mission;
+      els.lessonTip.innerHTML = lesson.tip;
+      els.fileName.textContent = language.fileName;
+      els.fileIcon.textContent = language.icon;
+      els.fileIcon.className = `font-bold ${lesson.language === 'php' ? 'text-indigo-400' : 'text-orange-400'}`;
+
+      editor.setOption('mode', language.mode);
+      editor.setOption('autoCloseTags', lesson.language === 'html');
+      editor.setValue(state.drafts[lesson.id] ?? lesson.starter);
+      editor.clearHistory();
+      renderRequirementProgress(editor.getValue());
+      setTimeout(() => editor.refresh(), 0);
+      clearResult();
+      renderNavigation();
+      renderNavigationMode();
+    }
+
+    function renderNavigation() {
+      els.prevBtn.disabled = currentIndex === 0;
+      const currentDone = state.completedLessonIds.includes(currentLesson().id);
+      els.nextBtn.disabled = currentIndex === COURSE_CATALOG.lessons.length - 1 || !currentDone;
+      const unlockedIndex = getAccessibleLessonIndex();
+      els.lessonDots.innerHTML = COURSE_CATALOG.lessons.map((lesson, i) => {
+        const done = state.completedLessonIds.includes(lesson.id);
+        const active = i === currentIndex;
+        const locked = i > unlockedIndex;
+        return `<button data-index="${i}" aria-label="Leçon ${i + 1}${locked ? ' verrouillée' : ''}" title="${locked ? 'Verrouillée — terminez la leçon précédente' : lesson.title}" ${locked ? 'disabled' : ''} class="h-2 rounded-full transition-all ${active ? 'w-6 bg-brand-400' : done ? 'w-2 bg-emerald-400' : locked ? 'w-2 cursor-not-allowed bg-slate-800 opacity-50' : 'w-2 bg-slate-600 hover:bg-brand-400'}"></button>`;
+      }).join('');
+      const count = state.completedLessonIds.length;
+      els.progressLabel.textContent = `${count} / ${COURSE_CATALOG.lessons.length}`;
+      els.progressBar.style.width = `${count / COURSE_CATALOG.lessons.length * 100}%`;
+    }
+
+    function clearResult() {
+      els.emptyState.classList.remove('hidden');
+      els.feedback.classList.add('hidden');
+      els.preview.classList.add('hidden');
+      els.resultArea.classList.remove('bg-emerald-950/20', 'bg-red-950/20');
+    }
+
+    function renderRequirementProgress(code) {
+      const lesson = currentLesson();
+      els.requirementsList.innerHTML = lesson.requirements.map((item, index) => {
+        // Lorsqu'il y a plus de libellés que de règles, la dernière règle couvre les derniers détails liés.
+        const rule = lesson.rules[Math.min(index, lesson.rules.length - 1)];
+        const passed = Boolean(rule && rule.regex.test(code));
+        return `<li class="flex items-start gap-2 text-xs leading-5 transition-colors ${passed ? 'text-emerald-300' : 'text-slate-400'}">
+          <span class="mt-1 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border text-[8px] transition-all ${passed ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300' : 'border-slate-600 text-transparent'}">✓</span>
+          <span>${item}</span>
+        </li>`;
+      }).join('');
+    }
+
+    function isCursorInTextContext(lesson, cursor) {
+      const beforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
+      const singleQuotes = (beforeCursor.match(/'/g) || []).length;
+      const doubleQuotes = (beforeCursor.match(/"/g) || []).length;
+      const insideQuotes = singleQuotes % 2 === 1 || doubleQuotes % 2 === 1;
+      if (lesson.language === 'php') return insideQuotes;
+      const insideTag = beforeCursor.lastIndexOf('<') > beforeCursor.lastIndexOf('>');
+      return !insideTag || insideQuotes;
+    }
+
+    function maybeCompleteRequiredText() {
+      if (isApplyingAssist) return false;
+      const lesson = currentLesson();
+      const targets = lesson.assistTexts || ASSIST_TEXTS_BY_LESSON[lesson.id] || [];
+      if (!targets.length) return false;
+
+      const cursor = editor.getCursor();
+      if (!isCursorInTextContext(lesson, cursor)) return false;
+      const lineBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
+
+      for (const target of targets) {
+        // Les textes très courts restent à saisir : l'aide vise surtout les phrases imposées.
+        if (target.length < 6) continue;
+        const minimumLength = Math.ceil(target.length * 0.30);
+        const maximumLength = Math.min(target.length - 1, lineBeforeCursor.length);
+        for (let length = maximumLength; length >= minimumLength; length--) {
+          const typed = lineBeforeCursor.slice(-length);
+          const expected = target.slice(0, length);
+          const normalize = value => value.toLocaleLowerCase('fr').replace(/’/g, "'");
+          if (normalize(typed) !== normalize(expected)) continue;
+
+          isApplyingAssist = true;
+          editor.replaceRange(target, { line: cursor.line, ch: cursor.ch - length }, cursor, '+required-text-assist');
+          isApplyingAssist = false;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function hideTabCompletion() {
+      pendingTabCompletion = null;
+      els.codeSuggestion.classList.add('hidden');
+      els.codeSuggestion.classList.remove('flex');
+    }
+
+    function updateTabCompletion() {
+      const lesson = currentLesson();
+      const targets = lesson.tabCompletions || TAB_COMPLETIONS_BY_LESSON[lesson.id] || [];
+      const cursor = editor.getCursor();
+      if (!targets.length || !isCursorInTextContext(lesson, cursor)) {
+        hideTabCompletion();
+        return;
+      }
+
+      const lineBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
+      for (const value of targets) {
+        // 20 % avec un minimum pratique de 3 caractères ; l'URL OpenAI se propose donc après « http ».
+        const minimumLength = Math.max(3, Math.ceil(value.length * 0.20));
+        const maximumLength = Math.min(value.length - 1, lineBeforeCursor.length);
+        for (let length = maximumLength; length >= minimumLength; length--) {
+          const typed = lineBeforeCursor.slice(-length);
+          if (typed.toLocaleLowerCase('fr') !== value.slice(0, length).toLocaleLowerCase('fr')) continue;
+          pendingTabCompletion = {
+            value,
+            typed,
+            from: { line: cursor.line, ch: cursor.ch - length },
+            to: { line: cursor.line, ch: cursor.ch }
+          };
+          els.suggestionValue.textContent = value;
+          els.codeSuggestion.classList.remove('hidden');
+          els.codeSuggestion.classList.add('flex');
+          return;
+        }
+      }
+      hideTabCompletion();
+    }
+
+    function acceptTabCompletion() {
+      if (!pendingTabCompletion) return false;
+      const suggestion = pendingTabCompletion;
+      const cursor = editor.getCursor();
+      const cursorIsCurrent = cursor.line === suggestion.to.line && cursor.ch === suggestion.to.ch;
+      const typedText = editor.getRange(suggestion.from, suggestion.to);
+      if (!cursorIsCurrent || typedText.toLocaleLowerCase('fr') !== suggestion.typed.toLocaleLowerCase('fr')) {
+        hideTabCompletion();
+        return false;
+      }
+
+      hideTabCompletion();
+      editor.replaceRange(suggestion.value, suggestion.from, suggestion.to, '+tab-completion');
+      editor.setCursor({ line: suggestion.from.line, ch: suggestion.from.ch + suggestion.value.length });
+      return true;
+    }
+
+    function renderLiveUpdate() {
+      const lesson = currentLesson();
+      const code = editor.getValue();
+      const passedCount = lesson.rules.filter(rule => rule.regex.test(code)).length;
+      const allPassed = passedCount === lesson.rules.length;
+      renderRequirementProgress(code);
+      els.resultArea.classList.remove('bg-emerald-950/20', 'bg-red-950/20');
+      els.emptyState.classList.add('hidden');
+
+      if (lesson.language === 'html') {
+        els.feedback.classList.add('hidden');
+        els.preview.srcdoc = code;
+        els.preview.classList.remove('hidden');
+        els.preview.style.marginTop = '0';
+      } else {
+        els.preview.classList.add('hidden');
+        els.feedback.classList.remove('hidden');
+        els.feedback.innerHTML = `
+          <div class="rounded-xl border ${allPassed ? 'border-emerald-400/25 bg-emerald-400/[.05]' : 'border-slate-700 bg-slate-800/30'} p-4">
+            <div class="flex items-center justify-between gap-4">
+              <div><p class="text-xs font-bold ${allPassed ? 'text-emerald-300' : 'text-slate-300'}">Analyse PHP en direct</p>
+              <p class="mt-1 text-[11px] text-slate-500">${passedCount} objectif${passedCount > 1 ? 's' : ''} sur ${lesson.rules.length} détecté${passedCount > 1 ? 's' : ''}</p></div>
+              <span class="font-mono text-xs ${allPassed ? 'text-emerald-300' : 'text-brand-300'}">${Math.round(passedCount / lesson.rules.length * 100)}%</span>
+            </div>
+            ${allPassed ? `<div class="mt-3 rounded-lg border border-slate-700 bg-ink-950 p-3 font-mono text-xs text-slate-300"><span class="text-slate-600">Sortie simulée › </span>${escapeHtml(lesson.output || 'Code valide')}</div>` : ''}
+          </div>`;
+      }
+    }
+
+    editor.on('change', () => {
+      maybeCompleteRequiredText();
+      updateTabCompletion();
+      clearTimeout(draftSaveTimer);
+      clearTimeout(liveUpdateTimer);
+      draftSaveTimer = setTimeout(() => {
+        state.drafts[currentLesson().id] = editor.getValue();
+        saveState();
+      }, 250);
+      liveUpdateTimer = setTimeout(renderLiveUpdate, 120);
+    });
+
+    editor.on('cursorActivity', () => {
+      // Une suggestion n'est valable qu'à la position où elle a été détectée.
+      if (pendingTabCompletion) updateTabCompletion();
+    });
+
+    /* ================================================================
+       4. VALIDATION (simulation locale HTML/PHP par expressions régulières)
+       ================================================================ */
+    function validateCode() {
+      const lesson = currentLesson();
+      const code = editor.getValue();
+      state.drafts[lesson.id] = code;
+      const failedRules = lesson.rules.filter(rule => !rule.regex.test(code));
+
+      els.emptyState.classList.add('hidden');
+      els.preview.classList.add('hidden');
+      els.feedback.classList.remove('hidden');
+      els.resultArea.classList.remove('bg-emerald-950/20', 'bg-red-950/20');
+
+      if (failedRules.length) {
+        els.resultArea.classList.add('bg-red-950/20');
+        els.feedback.innerHTML = `
+          <div class="rounded-xl border border-red-400/25 bg-red-400/[.06] p-4">
+            <div class="flex items-start gap-3"><div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-red-400/15 font-bold text-red-300">!</div>
+            <div><h3 class="text-sm font-bold text-red-200">Pas encore — vous y êtes presque</h3><p class="mt-1 text-xs text-red-200/60">${failedRules.length} point${failedRules.length > 1 ? 's' : ''} à corriger :</p>
+            <ul class="mt-3 space-y-2">${failedRules.map(rule => `<li class="flex gap-2 text-xs leading-5 text-slate-300"><span class="text-red-400">→</span><span>${escapeHtml(rule.hint)}</span></li>`).join('')}</ul></div></div>
+          </div>`;
+      } else {
+        if (!state.completedLessonIds.includes(lesson.id)) state.completedLessonIds.push(lesson.id);
+        state.lastCompletedLessonId = lesson.id;
+        saveState();
+        renderNavigation();
+        els.resultArea.classList.add('bg-emerald-950/20');
+        const isLast = currentIndex === COURSE_CATALOG.lessons.length - 1;
+        els.feedback.innerHTML = `
+          <div class="rounded-xl border border-emerald-400/25 bg-emerald-400/[.06] p-4">
+            <div class="flex items-start gap-3"><div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-400/15 font-bold text-emerald-300">✓</div>
+            <div class="flex-1"><h3 class="text-sm font-bold text-emerald-200">${isLast ? 'Parcours terminé !' : 'Mission accomplie !'}</h3>
+            <p class="mt-1 text-xs leading-5 text-emerald-100/60">${isLast ? 'Vous avez validé toutes les missions disponibles.' : 'Votre code répond à tous les objectifs. La prochaine leçon est débloquée.'}</p>
+            ${lesson.language === 'php' ? `<div class="mt-3 rounded-lg border border-slate-700 bg-ink-950 p-3 font-mono text-xs text-slate-300"><span class="text-slate-600">Sortie › </span>${escapeHtml(lesson.output || '')}</div>` : ''}
+            ${!isLast ? '<button id="feedback-next" class="mt-3 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-emerald-950 transition hover:bg-emerald-400">Leçon suivante →</button>' : ''}</div></div>
+          </div>`;
+        $('feedback-next')?.addEventListener('click', () => goToLesson(currentIndex + 1));
+
+        // Une prévisualisation visuelle est proposée uniquement après validation HTML.
+        if (lesson.language === 'html') {
+          setTimeout(() => {
+            els.preview.srcdoc = code;
+            els.preview.classList.remove('hidden');
+            els.preview.style.marginTop = '12px';
+          }, 80);
+        }
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+    }
+
+    function goToLesson(index) {
+      if (index < 0 || index >= COURSE_CATALOG.lessons.length) return;
+      if (index > getAccessibleLessonIndex()) return;
+      currentIndex = index;
+      renderLesson();
+    }
+
+    /* ================================================================
+       5. LIVRE DES LEÇONS ET ÉVÉNEMENTS
+       ================================================================ */
+    function renderLessonBookList(query = '') {
+      const normalized = query.trim().toLocaleLowerCase('fr');
+      const unlockedIndex = getAccessibleLessonIndex();
+      const matches = COURSE_CATALOG.lessons
+        .map((lesson, index) => ({ lesson, index }))
+        .filter(({ lesson }) => `${lesson.title} ${lesson.subtitle} ${lesson.mission} ${lesson.language}`.toLocaleLowerCase('fr').includes(normalized));
+
+      let previousLanguage = null;
+      $('glossary-list').innerHTML = matches.length ? matches.map(({ lesson, index }) => {
+        const locked = index > unlockedIndex;
+        const done = state.completedLessonIds.includes(lesson.id);
+        const selected = index === selectedBookIndex;
+        const language = COURSE_CATALOG.languages[lesson.language];
+        const chapterHeading = lesson.language !== previousLanguage
+          ? `<p class="mb-2 mt-3 px-2 text-[10px] font-extrabold uppercase tracking-[.2em] text-slate-600 first:mt-0">Module ${language.label}</p>`
+          : '';
+        previousLanguage = lesson.language;
+        return `${chapterHeading}<button ${locked ? 'disabled' : `data-book-index="${index}"`} class="group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition ${selected && !locked ? 'border-brand-400/30 bg-brand-400/10' : 'border-transparent hover:border-slate-700 hover:bg-slate-800/70'} ${locked ? 'cursor-not-allowed opacity-45' : ''}">
+          <span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg font-mono text-[10px] font-bold ${done ? 'bg-emerald-400/15 text-emerald-300' : locked ? 'bg-slate-800 text-slate-600' : 'bg-brand-400/15 text-brand-300'}">${done ? '✓' : locked ? '⌑' : index + 1}</span>
+          <span class="min-w-0 flex-1"><span class="block truncate text-xs font-semibold ${locked ? 'text-slate-500' : 'text-slate-200'}">${escapeHtml(lesson.title)}</span><span class="mt-0.5 block text-[10px] ${locked ? 'text-slate-700' : 'text-slate-500'}">${locked ? 'Leçon verrouillée' : done ? 'Terminée' : index === unlockedIndex ? 'Disponible maintenant' : 'À relire'}</span></span>
+          ${locked ? '<span class="text-xs text-slate-700">🔒</span>' : '<span class="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-brand-300">›</span>'}
+        </button>`;
+      }).join('') : '<p class="py-12 text-center text-xs text-slate-500">Aucune leçon ne correspond à cette recherche.</p>';
+
+      $('book-progress').textContent = state.navigationMode === 'free'
+        ? `Mode libre · ${COURSE_CATALOG.lessons.length} accessibles`
+        : `${getUnlockedLessonCount()} / ${COURSE_CATALOG.lessons.length} débloquées`;
+    }
+
+    function renderLessonBookDetail(index) {
+      const lesson = COURSE_CATALOG.lessons[index];
+      if (!lesson || index > getAccessibleLessonIndex()) return;
+      selectedBookIndex = index;
+      const language = COURSE_CATALOG.languages[lesson.language];
+      const done = state.completedLessonIds.includes(lesson.id);
+      $('book-detail').innerHTML = `
+        <div class="fade-up mx-auto max-w-3xl">
+          <div class="mb-5 flex flex-wrap items-center gap-2">
+            <span class="rounded-md border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider ${lesson.language === 'php' ? 'border-indigo-400/20 bg-indigo-400/10 text-indigo-300' : 'border-orange-400/20 bg-orange-400/10 text-orange-300'}">${language.label}</span>
+            <span class="text-xs text-slate-500">Chapitre ${index + 1}</span>
+            <span class="ml-auto rounded-full px-2.5 py-1 text-[10px] font-semibold ${done ? 'bg-emerald-400/10 text-emerald-300' : 'bg-brand-400/10 text-brand-300'}">${done ? '✓ Terminée' : '● Disponible'}</span>
+          </div>
+          <h3 class="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">${escapeHtml(lesson.title)}</h3>
+          <p class="mt-2 text-sm text-slate-400">${escapeHtml(lesson.subtitle)}</p>
+
+          <section class="lesson-copy mt-7 space-y-4 text-sm leading-7 text-slate-300">
+            <h4 class="text-xs font-extrabold uppercase tracking-[.18em] text-brand-300">Comprendre la notion</h4>
+            ${lesson.explanation.map(paragraph => `<p>${paragraph}</p>`).join('')}
+          </section>
+
+          <section class="mt-7 rounded-xl border border-slate-700 bg-ink-900/70 p-5">
+            <h4 class="mb-3 text-xs font-extrabold uppercase tracking-[.18em] text-slate-400">Comment l’utiliser</h4>
+            <ul class="space-y-2.5">${lesson.requirements.map(item => `<li class="flex items-start gap-2.5 text-xs leading-5 text-slate-300"><span class="mt-0.5 text-brand-400">◆</span><span>${item}</span></li>`).join('')}</ul>
+          </section>
+
+          <section class="mt-5">
+            <div class="mb-2 flex items-center justify-between"><h4 class="text-xs font-extrabold uppercase tracking-[.18em] text-slate-400">Exemple de départ</h4><span class="font-mono text-[10px] text-slate-600">${language.fileName}</span></div>
+            <pre class="overflow-x-auto rounded-xl border border-slate-700 bg-[#080b12] p-4 font-mono text-xs leading-6 text-slate-300"><code>${escapeHtml(lesson.starter)}</code></pre>
+          </section>
+
+          <div class="mt-5 rounded-xl border border-amber-400/15 bg-amber-400/[.05] p-4 text-xs leading-5 text-amber-100/70"><span class="mr-2">💡</span>${lesson.tip}</div>
+
+          <div class="mt-7 flex items-center justify-between border-t border-slate-700 pt-5">
+            <p class="max-w-md text-xs leading-5 text-slate-500">Mission : ${escapeHtml(lesson.mission)}</p>
+            <button id="book-open-lesson" data-open-index="${index}" class="ml-4 shrink-0 rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-brand-400">${index === currentIndex ? 'Reprendre dans l’éditeur' : 'Ouvrir la leçon'} →</button>
+          </div>
+        </div>`;
+      renderLessonBookList($('glossary-search').value);
+    }
+
+    function openGlossary() {
+      $('glossary-modal').classList.remove('hidden');
+      $('glossary-modal').classList.add('flex');
+      $('glossary-search').value = '';
+      selectedBookIndex = Math.min(currentIndex, getAccessibleLessonIndex());
+      renderLessonBookDetail(selectedBookIndex);
+      setTimeout(() => $('glossary-search').focus(), 50);
+    }
+    function closeGlossary() { $('glossary-modal').classList.add('hidden'); $('glossary-modal').classList.remove('flex'); }
+
+    $('run-btn').addEventListener('click', validateCode);
+    els.prevBtn.addEventListener('click', () => goToLesson(currentIndex - 1));
+    els.nextBtn.addEventListener('click', () => goToLesson(currentIndex + 1));
+    els.lessonDots.addEventListener('click', event => {
+      const button = event.target.closest('[data-index]');
+      if (button) goToLesson(Number(button.dataset.index));
+    });
+    $('glossary-btn').addEventListener('click', openGlossary);
+    $('close-glossary').addEventListener('click', closeGlossary);
+    $('glossary-modal').addEventListener('click', event => { if (event.target === $('glossary-modal')) closeGlossary(); });
+    $('glossary-search').addEventListener('input', event => renderLessonBookList(event.target.value));
+    $('glossary-list').addEventListener('click', event => {
+      const chapter = event.target.closest('[data-book-index]');
+      if (chapter) renderLessonBookDetail(Number(chapter.dataset.bookIndex));
+    });
+    $('book-detail').addEventListener('click', event => {
+      const openButton = event.target.closest('[data-open-index]');
+      if (!openButton) return;
+      const index = Number(openButton.dataset.openIndex);
+      closeGlossary();
+      goToLesson(index);
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeGlossary(); });
+    $('reset-btn').addEventListener('click', () => {
+      if (!confirm('Réinitialiser toute la progression et tous les brouillons ?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = structuredClone(defaultState);
+      currentIndex = 0;
+      renderLesson();
+    });
+
+    renderLesson();
+  </script>
+</body>
+</html>
