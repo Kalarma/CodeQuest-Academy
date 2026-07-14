@@ -913,7 +913,7 @@
     function renderNavigation() {
       els.prevBtn.disabled = currentIndex === 0;
       const currentDone = state.completedLessonIds.includes(currentLesson().id);
-      els.nextBtn.disabled = currentIndex === COURSE_CATALOG.lessons.length - 1 || !currentDone;
+      els.nextBtn.disabled = currentIndex === COURSE_CATALOG.lessons.length - 1 || (state.navigationMode !== 'free' && !currentDone);
       const unlockedIndex = getAccessibleLessonIndex();
       els.lessonDots.innerHTML = COURSE_CATALOG.lessons.map((lesson, i) => {
         const done = state.completedLessonIds.includes(lesson.id);
@@ -1170,7 +1170,7 @@
         previousLanguage = lesson.language;
         return `${chapterHeading}<button ${locked ? 'disabled' : `data-book-index="${index}"`} class="group flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition ${selected && !locked ? 'border-brand-400/30 bg-brand-400/10' : 'border-transparent hover:border-slate-700 hover:bg-slate-800/70'} ${locked ? 'cursor-not-allowed opacity-45' : ''}">
           <span class="grid h-7 w-7 shrink-0 place-items-center rounded-lg font-mono text-[10px] font-bold ${done ? 'bg-emerald-400/15 text-emerald-300' : locked ? 'bg-slate-800 text-slate-600' : 'bg-brand-400/15 text-brand-300'}">${done ? '✓' : locked ? '⌑' : index + 1}</span>
-          <span class="min-w-0 flex-1"><span class="block truncate text-xs font-semibold ${locked ? 'text-slate-500' : 'text-slate-200'}">${escapeHtml(lesson.title)}</span><span class="mt-0.5 block text-[10px] ${locked ? 'text-slate-700' : 'text-slate-500'}">${locked ? 'Leçon verrouillée' : done ? 'Terminée' : index === unlockedIndex ? 'Disponible maintenant' : 'À relire'}</span></span>
+          <span class="min-w-0 flex-1"><span class="block truncate text-xs font-semibold ${locked ? 'text-slate-500' : 'text-slate-200'}">${escapeHtml(lesson.title)}</span><span class="mt-0.5 block text-[10px] ${locked ? 'text-slate-700' : 'text-slate-500'}">${locked ? 'Leçon verrouillée' : done ? 'Terminée' : state.navigationMode === 'free' ? 'Accessible en mode libre' : index === unlockedIndex ? 'Disponible maintenant' : 'À relire'}</span></span>
           ${locked ? '<span class="text-xs text-slate-700">🔒</span>' : '<span class="text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-brand-300">›</span>'}
         </button>`;
       }).join('') : '<p class="py-12 text-center text-xs text-slate-500">Aucune leçon ne correspond à cette recherche.</p>';
@@ -1227,11 +1227,31 @@
       $('glossary-search').value = '';
       selectedBookIndex = Math.min(currentIndex, getAccessibleLessonIndex());
       renderLessonBookDetail(selectedBookIndex);
-      setTimeout(() => $('glossary-search').focus(), 50);
+      if (window.innerWidth > 900) setTimeout(() => $('glossary-search').focus(), 50);
     }
     function closeGlossary() { $('glossary-modal').classList.add('hidden'); $('glossary-modal').classList.remove('flex'); }
 
-    $('run-btn').addEventListener('click', validateCode);
+    function setMobileView(view) {
+      if (!['course', 'code', 'result'].includes(view)) return;
+      document.body.dataset.mobileView = view;
+      document.querySelectorAll('#mobile-tabbar [data-mobile-view]').forEach(button => button.classList.toggle('active', button.dataset.mobileView === view));
+      if (view === 'code') setTimeout(() => editor.refresh(), 0);
+      if (view === 'result' && els.feedback.classList.contains('hidden')) renderLiveUpdate();
+    }
+
+    function updateKeyboardState() {
+      if (!window.visualViewport || window.innerWidth > 900) {
+        document.body.classList.remove('keyboard-open');
+        return;
+      }
+      const keyboardHeight = window.innerHeight - window.visualViewport.height;
+      document.body.classList.toggle('keyboard-open', keyboardHeight > 140);
+    }
+
+    $('run-btn').addEventListener('click', () => {
+      validateCode();
+      if (window.innerWidth <= 900) setMobileView('result');
+    });
     els.prevBtn.addEventListener('click', () => goToLesson(currentIndex - 1));
     els.nextBtn.addEventListener('click', () => goToLesson(currentIndex + 1));
     els.lessonDots.addEventListener('click', event => {
@@ -1253,6 +1273,25 @@
       closeGlossary();
       goToLesson(index);
     });
+    $('lesson-selector').addEventListener('change', event => {
+      state.navigationMode = 'free';
+      currentIndex = Number(event.target.value);
+      saveState();
+      renderLesson();
+    });
+    $('navigation-mode-btn').addEventListener('click', () => {
+      state.navigationMode = state.navigationMode === 'free' ? 'guided' : 'free';
+      currentIndex = Math.min(currentIndex, getAccessibleLessonIndex());
+      saveState();
+      renderLesson();
+    });
+    $('mobile-tabbar').addEventListener('click', event => {
+      const button = event.target.closest('[data-mobile-view]');
+      if (button) setMobileView(button.dataset.mobileView);
+    });
+    editor.on('focus', () => { if (window.innerWidth <= 900) setMobileView('code'); });
+    window.visualViewport?.addEventListener('resize', updateKeyboardState);
+    window.addEventListener('resize', updateKeyboardState);
     document.addEventListener('keydown', event => { if (event.key === 'Escape') closeGlossary(); });
     $('reset-btn').addEventListener('click', () => {
       if (!confirm('Réinitialiser toute la progression et tous les brouillons ?')) return;
@@ -1262,6 +1301,9 @@
       renderLesson();
     });
 
+    populateLessonSelector();
+    setMobileView('course');
+    updateKeyboardState();
     renderLesson();
   </script>
 </body>
