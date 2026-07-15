@@ -109,24 +109,39 @@
       .mobile-mission-strip { flex: 0 0 auto; border-bottom: 1px solid #253047; background: linear-gradient(135deg, rgba(14,165,233,.1), rgba(99,102,241,.06)); padding: .65rem .8rem; }
       .mobile-mission-heading { display: flex; align-items: center; gap: .55rem; }
       .mobile-mission-heading button { min-width: 44px; min-height: 36px; touch-action: manipulation; }
-      .mobile-mission-detail { margin-top: .45rem; display: -webkit-box; overflow: hidden; color: #cbd5e1; font-size: .69rem; line-height: 1.15rem; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+      .mobile-mission-detail { margin-top: .35rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #94a3b8; font-size: .62rem; line-height: 1rem; }
+      .mobile-task-list { height: 106px; margin-top: .35rem; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity; scrollbar-width: thin; touch-action: pan-y; }
+      .mobile-task { min-height: 34px; margin-bottom: 2px; display: flex; align-items: center; gap: .5rem; border: 1px solid transparent; border-radius: .55rem; padding: .1rem .5rem; scroll-snap-align: center; color: #94a3b8; font-size: .66rem; line-height: .95rem; transition: opacity .3s, background .3s, border-color .3s, transform .3s; }
+      .mobile-task > span:nth-child(2) { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .mobile-task.current { border-color: rgba(56,189,248,.35); background: rgba(14,165,233,.1); color: #e2e8f0; }
+      .mobile-task.completed { background: rgba(52,211,153,.055); color: #6ee7b7; opacity: .48; }
+      .mobile-task code { border-radius: .25rem; background: rgba(15,23,42,.8); padding: .08rem .25rem; color: #7dd3fc; font-family: 'JetBrains Mono', monospace; font-size: .6rem; }
+      .mobile-task-indicator { display: grid; width: 19px; height: 19px; flex: 0 0 auto; place-items: center; border: 1px solid #475569; border-radius: 999px; font-size: .58rem; }
+      .mobile-task.completed .mobile-task-indicator { border-color: rgba(52,211,153,.5); background: rgba(52,211,153,.15); }
+      .mobile-task-insert { min-height: 28px; flex: 0 0 auto; border: 1px solid rgba(56,189,248,.28); border-radius: .45rem; background: rgba(14,165,233,.1); padding: 0 .45rem; color: #7dd3fc; font-size: .58rem; font-weight: 800; touch-action: manipulation; }
+      .mobile-task.task-complete { animation: taskComplete .75s ease both; }
+      .mobile-task.task-invalidated { animation: taskInvalidated 1.15s ease both; }
 
       #lesson-panel > div:nth-child(3) { padding: 1.15rem 1rem 1.5rem; }
       #lesson-content { max-width: none; }
       #lesson-title { font-size: 1.55rem; }
-      #lesson-explanation { margin-top: 1.25rem; }
+      #lesson-subtitle { font-size: .75rem; }
+      #lesson-explanation { margin-top: 1.1rem; font-size: .76rem; line-height: 1.45rem; }
+      #mission-text { font-size: .76rem; line-height: 1.25rem; }
+      #requirements-list { font-size: .7rem; }
       #lesson-content > div:nth-of-type(3) { margin-top: 1.5rem; }
       #lesson-dots { max-width: 48vw; overflow: hidden; }
 
       body[data-mobile-view="code"] #editor-shell { min-height: 0; flex: 1 1 auto; }
       body[data-mobile-view="code"] #output-panel { min-height: 130px; max-height: 30%; flex: 0 0 30%; }
+      body[data-mobile-view="code"].preview-collapsed #output-panel { min-height: 40px; max-height: 40px; flex-basis: 40px; }
+      body[data-mobile-view="code"].preview-collapsed #result-area { display: none; }
       body[data-mobile-view="result"] #editor-shell,
       body[data-mobile-view="result"] #editor-actions { display: none; }
       body[data-mobile-view="result"] #output-panel { min-height: 0; flex: 1 1 auto; }
       body[data-mobile-view="result"] #file-tabbar { display: none; }
       #editor-actions { padding: .5rem .75rem; }
       #editor-actions p { max-width: 55%; font-size: .58rem; line-height: 1rem; }
-      #run-btn { padding: .65rem .8rem; }
       .CodeMirror { font-size: 12px; line-height: 1.55; touch-action: pan-x pan-y; }
       .CodeMirror-scroll, .CodeMirror-lines, .CodeMirror textarea { touch-action: manipulation; }
 
@@ -134,12 +149,23 @@
       body.keyboard-open #editor-shell { flex: 1 1 auto !important; min-height: 0; }
       body.keyboard-open .mobile-mission-strip { padding-block: .35rem; }
       body.keyboard-open .mobile-mission-detail { display: none; }
+      body.keyboard-open .mobile-task-list { height: 106px; }
       body.keyboard-open #editor-actions p { display: none; }
       body.keyboard-open #editor-actions { justify-content: flex-end; padding-block: .35rem; }
-      body.keyboard-open #run-btn { padding-block: .5rem; }
 
       #glossary-modal { padding: 0; }
       #glossary-modal > div { height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+    }
+    @keyframes taskComplete {
+      0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); }
+      45% { opacity: 1; transform: scale(1.025); box-shadow: 0 0 18px rgba(52,211,153,.22); }
+      100% { opacity: .48; transform: translateY(-2px); box-shadow: 0 0 0 rgba(52,211,153,0); }
+    }
+    @keyframes taskInvalidated {
+      0%, 100% { transform: translateX(0); background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.35); }
+      25% { transform: translateX(-4px); background: rgba(245,158,11,.18); }
+      50% { transform: translateX(4px); background: rgba(245,158,11,.13); }
+      75% { transform: translateX(-2px); }
     }
     @media (max-width: 900px) and (max-height: 700px) {
       #editor-actions p { display: none; }
@@ -242,6 +268,7 @@
             <span id="mobile-mission-progress" class="shrink-0 rounded-full border border-slate-700 bg-ink-900 px-2 py-1 font-mono text-[10px] text-brand-300">0 / 0</span>
           </div>
           <p id="mobile-mission-detail" class="mobile-mission-detail"></p>
+          <div id="mobile-mission-tasks" class="mobile-task-list" aria-label="Étapes de la mission"></div>
         </div>
 
         <div id="file-tabbar" class="flex h-11 shrink-0 items-center justify-between border-b border-slate-800 bg-ink-900 px-4">
@@ -257,23 +284,25 @@
 
         <div id="editor-shell" class="relative min-h-[280px] flex-[3] overflow-hidden border-b border-slate-800">
           <textarea id="code-editor" aria-label="Éditeur de code"></textarea>
-          <div id="code-suggestion" class="pointer-events-none absolute bottom-3 right-4 z-20 hidden max-w-[calc(100%-2rem)] items-center gap-3 rounded-lg border border-brand-400/30 bg-ink-800/95 px-3 py-2 font-mono text-[11px] shadow-xl shadow-black/30">
+          <div id="code-suggestion" class="pointer-events-auto absolute bottom-3 right-4 z-20 hidden max-w-[calc(100%-2rem)] items-center gap-2 rounded-lg border border-brand-400/30 bg-ink-800/95 px-3 py-2 font-mono text-[11px] shadow-xl shadow-black/30">
             <span class="text-slate-500">Suggestion</span>
             <span id="suggestion-value" class="truncate text-brand-300"></span>
-            <kbd class="rounded border border-slate-600 bg-ink-950 px-1.5 py-0.5 text-[10px] font-bold text-slate-300">Tab ↹</kbd>
+            <button id="suggestion-accept" class="rounded border border-brand-400/30 bg-brand-400/10 px-2 py-1 text-[10px] font-bold text-brand-300">Insérer</button>
+            <kbd class="hidden rounded border border-slate-600 bg-ink-950 px-1.5 py-0.5 text-[10px] font-bold text-slate-300 sm:inline">Tab ↹</kbd>
           </div>
         </div>
 
         <div id="editor-actions" class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-ink-900 px-4 py-3">
           <p class="font-mono text-[11px] text-slate-500"><kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Ctrl</kbd> + <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Espace</kbd> pour les balises · <kbd class="rounded border border-slate-700 bg-slate-800 px-1.5 py-0.5 text-slate-400">Tab</kbd> pour accepter une suggestion</p>
-          <button id="run-btn" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-brand-500/15 transition hover:-translate-y-0.5 hover:bg-brand-400 active:translate-y-0">
-            <span aria-hidden="true">▶</span> Exécuter &amp; Vérifier
-          </button>
+          <div id="auto-validation-status" class="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-[10px] font-bold text-slate-400">
+            <span id="auto-validation-dot" class="h-2 w-2 rounded-full bg-brand-400"></span>
+            <span id="auto-validation-label">Validation automatique active</span>
+          </div>
         </div>
 
         <div id="output-panel" class="flex min-h-[205px] flex-[2] flex-col bg-[#0a0e17]">
           <div class="flex h-10 shrink-0 items-center gap-5 border-b border-slate-800 px-5 text-[11px] font-bold uppercase tracking-widest text-slate-500">
-            <button id="result-tab" class="flex h-full items-center gap-2 border-b-2 border-brand-400 text-slate-200"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>Aperçu en direct</button>
+            <button id="result-tab" class="flex h-full items-center gap-2 border-b-2 border-brand-400 text-slate-200"><span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"></span>Aperçu en direct <span id="preview-toggle-icon" class="ml-1 text-slate-600">⌄</span></button>
             <span>Console</span>
           </div>
           <div id="result-area" class="relative min-h-0 flex-1 overflow-auto p-4">
@@ -842,8 +871,10 @@
     let selectedBookIndex = currentIndex;
     let draftSaveTimer;
     let liveUpdateTimer;
-    let isApplyingAssist = false;
     let pendingTabCompletion = null;
+    let autoValidationTimer = null;
+    let renderedTaskSignature = '';
+    const taskStatesByLesson = new Map();
 
     function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -896,7 +927,8 @@
         'Tab': cm => {
           if (acceptTabCompletion()) return;
           return cm.somethingSelected() ? cm.indentSelection('add') : cm.execCommand('insertSoftTab');
-        }
+        },
+        'Enter': cm => acceptTabCompletion() || cm.execCommand('newlineAndIndent')
       }
     });
 
@@ -910,7 +942,9 @@
       emptyState: $('empty-state'), feedback: $('feedback'), preview: $('html-preview'), resultArea: $('result-area'),
       codeSuggestion: $('code-suggestion'), suggestionValue: $('suggestion-value'),
       mobileMissionTitle: $('mobile-mission-title'), mobileMissionNumber: $('mobile-mission-number'),
-      mobileMissionDetail: $('mobile-mission-detail'), mobileMissionProgress: $('mobile-mission-progress')
+      mobileMissionDetail: $('mobile-mission-detail'), mobileMissionProgress: $('mobile-mission-progress'),
+      mobileMissionTasks: $('mobile-mission-tasks'), autoValidationLabel: $('auto-validation-label'),
+      autoValidationDot: $('auto-validation-dot')
     };
 
     function currentLesson() { return COURSE_CATALOG.lessons[currentIndex]; }
@@ -918,6 +952,8 @@
     function renderLesson() {
       const lesson = currentLesson();
       const language = COURSE_CATALOG.languages[lesson.language];
+      cancelAutoValidation();
+      renderedTaskSignature = '';
       state.currentLessonId = lesson.id;
       saveState();
 
@@ -973,15 +1009,164 @@
       els.resultArea.classList.remove('bg-emerald-950/20', 'bg-red-950/20');
     }
 
+    function getTaskStates(lesson, code) {
+      return lesson.requirements.map((requirement, index) => {
+        const tagMatch = requirement.match(/&lt;([a-z][\w-]*)&gt;/i);
+        if (tagMatch) return new RegExp(`<${tagMatch[1]}\\b[^>]*>`, 'i').test(code);
+        const rule = lesson.rules[Math.min(index, lesson.rules.length - 1)];
+        return Boolean(rule && rule.regex.test(code));
+      });
+    }
+
+    function getTaskSuggestion(lesson, taskIndex) {
+      const requirement = lesson.requirements[taskIndex] || '';
+      const rule = lesson.rules[Math.min(taskIndex, lesson.rules.length - 1)];
+      const tagMatch = requirement.match(/&lt;([a-z][\w-]*)&gt;/i);
+      const requestsNewTag = /Ajouter|Utiliser|Créer/i.test(requirement) && !/Conserver/i.test(requirement);
+      if (tagMatch && requestsNewTag) {
+        const tag = tagMatch[1].toLowerCase();
+        const voidTemplates = {
+          img: '<img src="" alt="">', input: '<input type="text">', meta: '<meta name="" content="">'
+        };
+        const value = voidTemplates[tag] || `<${tag}></${tag}>`;
+        return { value, cursorOffset: voidTemplates[tag] ? value.length : tag.length + 2 };
+      }
+
+      const assistTargets = lesson.assistTexts || ASSIST_TEXTS_BY_LESSON[lesson.id] || [];
+      const technicalTargets = lesson.tabCompletions || TAB_COMPLETIONS_BY_LESSON[lesson.id] || [];
+      const normalize = value => value.toLocaleLowerCase('fr').replace(/’/g, "'");
+      const haystack = normalize(`${requirement} ${rule?.hint || ''}`);
+      const target = [...technicalTargets, ...assistTargets].find(value => haystack.includes(normalize(value)));
+      return target ? { value: target, cursorOffset: target.length } : null;
+    }
+
+    function scrollMissionTask(taskIndex, behavior = 'smooth') {
+      requestAnimationFrame(() => {
+        const item = els.mobileMissionTasks.querySelector(`[data-task-index="${taskIndex}"]`);
+        if (!item) return;
+        const top = item.offsetTop - (els.mobileMissionTasks.clientHeight - item.offsetHeight) / 2;
+        els.mobileMissionTasks.scrollTo({ top: Math.max(0, top), behavior });
+      });
+    }
+
+    function renderMobileMissionTasks(lesson, states) {
+      const signature = `${lesson.id}:${states.map(Boolean).join('')}`;
+      if (signature === renderedTaskSignature) return;
+
+      const previousStates = taskStatesByLesson.get(lesson.id);
+      const newlyCompleted = previousStates ? states.map((passed, index) => passed && !previousStates[index] ? index : -1).filter(index => index >= 0) : [];
+      const invalidated = previousStates ? states.map((passed, index) => !passed && previousStates[index] ? index : -1).filter(index => index >= 0) : [];
+      const activeIndex = states.findIndex(passed => !passed);
+      const orderedIndexes = states.map((_, index) => index).sort((a, b) => Number(states[b]) - Number(states[a]) || a - b);
+
+      els.mobileMissionTasks.innerHTML = orderedIndexes.map(index => {
+        const passed = states[index];
+        const suggestion = !passed ? getTaskSuggestion(lesson, index) : null;
+        const animationClass = invalidated.includes(index) ? 'task-invalidated' : newlyCompleted.includes(index) ? 'task-complete' : '';
+        return `<div data-task-index="${index}" class="mobile-task ${passed ? 'completed' : ''} ${index === activeIndex ? 'current' : ''} ${animationClass}">
+          <span class="mobile-task-indicator">${passed ? '✓' : index + 1}</span>
+          <span class="min-w-0 flex-1">${lesson.requirements[index]}</span>
+          ${suggestion ? `<button data-insert-task="${index}" class="mobile-task-insert" title="Insérer ${escapeHtml(suggestion.value)}">Insérer</button>` : ''}
+        </div>`;
+      }).join('');
+
+      taskStatesByLesson.set(lesson.id, [...states]);
+      renderedTaskSignature = signature;
+
+      if (invalidated.length) {
+        scrollMissionTask(invalidated[0]);
+      } else if (newlyCompleted.length) {
+        scrollMissionTask(newlyCompleted[0]);
+        if (activeIndex >= 0) setTimeout(() => scrollMissionTask(activeIndex), 850);
+      } else if (!previousStates && activeIndex >= 0) {
+        scrollMissionTask(activeIndex, 'auto');
+      }
+    }
+
+    function insertTaskSuggestion(taskIndex) {
+      const suggestion = getTaskSuggestion(currentLesson(), taskIndex);
+      if (!suggestion) return;
+      setMobileView('code');
+      const lesson = currentLesson();
+      const code = editor.getValue();
+      let cursor = editor.getCursor();
+      let insertedValue = suggestion.value;
+      let cursorOffset = suggestion.cursorOffset;
+
+      if (lesson.language === 'html' && /^https?:\/\//i.test(suggestion.value)) {
+        const emptyHref = code.match(/href\s*=\s*(["'])\1/i);
+        if (emptyHref?.index != null) cursor = editor.posFromIndex(emptyHref.index + emptyHref[0].length - 1);
+      } else if (lesson.language === 'html' && !suggestion.value.startsWith('<')) {
+        const emptyElements = [...code.matchAll(/<(p|a|button|figcaption|footer|summary|li|th)\b[^>]*>\s*<\/\1>/gi)];
+        const emptyElement = emptyElements.at(-1);
+        if (emptyElement?.index != null) cursor = editor.posFromIndex(emptyElement.index + emptyElement[0].indexOf('>') + 1);
+      } else if (lesson.language === 'html' && suggestion.value.startsWith('<')) {
+        const bodyEnd = code.lastIndexOf('</body>');
+        if (bodyEnd >= 0) {
+          cursor = editor.posFromIndex(bodyEnd);
+          insertedValue = `  ${suggestion.value}\n  `;
+          cursorOffset += 2;
+        }
+      }
+
+      const insertionIndex = editor.indexFromPos(cursor);
+      editor.replaceRange(insertedValue, cursor, cursor, '+coach-suggestion');
+      editor.setCursor(editor.posFromIndex(insertionIndex + cursorOffset));
+      editor.focus();
+    }
+
+    function setAutoValidationStatus(label, stateName = 'idle') {
+      els.autoValidationLabel.textContent = label;
+      const color = stateName === 'success' ? 'bg-emerald-400' : stateName === 'pending' ? 'bg-amber-400 animate-pulse' : stateName === 'warning' ? 'bg-amber-400' : 'bg-brand-400';
+      els.autoValidationDot.className = `h-2 w-2 rounded-full ${color}`;
+    }
+
+    function cancelAutoValidation() {
+      if (autoValidationTimer) clearTimeout(autoValidationTimer);
+      autoValidationTimer = null;
+    }
+
+    function updateAutoValidation(lesson, code) {
+      const passedCount = lesson.rules.filter(rule => rule.regex.test(code)).length;
+      const allPassed = passedCount === lesson.rules.length;
+      const alreadyCompleted = state.completedLessonIds.includes(lesson.id);
+
+      if (alreadyCompleted) {
+        cancelAutoValidation();
+        setAutoValidationStatus(allPassed ? 'Mission validée ✓' : 'Une étape validée est à corriger', allPassed ? 'success' : 'warning');
+        return;
+      }
+
+      if (!allPassed) {
+        cancelAutoValidation();
+        setAutoValidationStatus(`${passedCount} / ${lesson.rules.length} objectifs détectés`);
+        return;
+      }
+
+      if (autoValidationTimer) return;
+      setAutoValidationStatus('Validation dans quelques secondes…', 'pending');
+      const lessonId = lesson.id;
+      autoValidationTimer = setTimeout(() => {
+        autoValidationTimer = null;
+        if (currentLesson().id !== lessonId) return;
+        const latestCode = editor.getValue();
+        if (!currentLesson().rules.every(rule => rule.regex.test(latestCode))) return;
+        validateCode();
+        setAutoValidationStatus('Mission validée automatiquement ✓', 'success');
+      }, 1600);
+    }
+
     function renderRequirementProgress(code) {
       const lesson = currentLesson();
-      const passedRules = lesson.rules.filter(rule => rule.regex.test(code)).length;
-      els.mobileMissionProgress.textContent = `${passedRules} / ${lesson.rules.length}`;
-      els.mobileMissionProgress.classList.toggle('text-emerald-300', passedRules === lesson.rules.length);
+      const taskStates = getTaskStates(lesson, code);
+      const passedTasks = taskStates.filter(Boolean).length;
+      els.mobileMissionProgress.textContent = `${passedTasks} / ${taskStates.length}`;
+      els.mobileMissionProgress.classList.toggle('text-emerald-300', passedTasks === taskStates.length);
+      renderMobileMissionTasks(lesson, taskStates);
+      updateAutoValidation(lesson, code);
       els.requirementsList.innerHTML = lesson.requirements.map((item, index) => {
         // Lorsqu'il y a plus de libellés que de règles, la dernière règle couvre les derniers détails liés.
-        const rule = lesson.rules[Math.min(index, lesson.rules.length - 1)];
-        const passed = Boolean(rule && rule.regex.test(code));
+        const passed = taskStates[index];
         return `<li class="flex items-start gap-2 text-xs leading-5 transition-colors ${passed ? 'text-emerald-300' : 'text-slate-400'}">
           <span class="mt-1 grid h-3.5 w-3.5 shrink-0 place-items-center rounded-full border text-[8px] transition-all ${passed ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300' : 'border-slate-600 text-transparent'}">✓</span>
           <span>${item}</span>
@@ -999,8 +1184,14 @@
       return !insideTag || insideQuotes;
     }
 
-    function maybeCompleteRequiredText() {
-      if (isApplyingAssist) return false;
+    function showCodeSuggestion(value, typed, from, to) {
+      pendingTabCompletion = { value, typed, from, to };
+      els.suggestionValue.textContent = value;
+      els.codeSuggestion.classList.remove('hidden');
+      els.codeSuggestion.classList.add('flex');
+    }
+
+    function proposeRequiredText() {
       const lesson = currentLesson();
       const targets = lesson.assistTexts || ASSIST_TEXTS_BY_LESSON[lesson.id] || [];
       if (!targets.length) return false;
@@ -1010,23 +1201,43 @@
       const lineBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
 
       for (const target of targets) {
-        // Les textes très courts restent à saisir : l'aide vise surtout les phrases imposées.
-        if (target.length < 6) continue;
-        const minimumLength = Math.ceil(target.length * 0.30);
+        const minimumLength = Math.min(target.length - 1, 2);
         const maximumLength = Math.min(target.length - 1, lineBeforeCursor.length);
         for (let length = maximumLength; length >= minimumLength; length--) {
           const typed = lineBeforeCursor.slice(-length);
           const expected = target.slice(0, length);
           const normalize = value => value.toLocaleLowerCase('fr').replace(/’/g, "'");
           if (normalize(typed) !== normalize(expected)) continue;
-
-          isApplyingAssist = true;
-          editor.replaceRange(target, { line: cursor.line, ch: cursor.ch - length }, cursor, '+required-text-assist');
-          isApplyingAssist = false;
+          showCodeSuggestion(target, typed, { line: cursor.line, ch: cursor.ch - length }, { line: cursor.line, ch: cursor.ch });
           return true;
         }
       }
       return false;
+    }
+
+    function proposeCurrentTaskStructure() {
+      const lesson = currentLesson();
+      const states = getTaskStates(lesson, editor.getValue());
+      const activeIndex = states.findIndex(passed => !passed);
+      if (activeIndex < 0) return false;
+      const suggestion = getTaskSuggestion(lesson, activeIndex);
+      if (!suggestion?.value.startsWith('<')) return false;
+      const cursor = editor.getCursor();
+      const lineBeforeCursor = editor.getLine(cursor.line).slice(0, cursor.ch);
+      const maximumLength = Math.min(suggestion.value.length - 1, lineBeforeCursor.length);
+      for (let length = maximumLength; length >= 2; length--) {
+        const typed = lineBeforeCursor.slice(-length);
+        if (typed.toLocaleLowerCase('fr') !== suggestion.value.slice(0, length).toLocaleLowerCase('fr')) continue;
+        showCodeSuggestion(suggestion.value, typed, { line: cursor.line, ch: cursor.ch - length }, cursor);
+        return true;
+      }
+      return false;
+    }
+
+    function updateContextualSuggestion() {
+      if (proposeCurrentTaskStructure()) return;
+      if (proposeRequiredText()) return;
+      updateTabCompletion();
     }
 
     function hideTabCompletion() {
@@ -1052,15 +1263,7 @@
         for (let length = maximumLength; length >= minimumLength; length--) {
           const typed = lineBeforeCursor.slice(-length);
           if (typed.toLocaleLowerCase('fr') !== value.slice(0, length).toLocaleLowerCase('fr')) continue;
-          pendingTabCompletion = {
-            value,
-            typed,
-            from: { line: cursor.line, ch: cursor.ch - length },
-            to: { line: cursor.line, ch: cursor.ch }
-          };
-          els.suggestionValue.textContent = value;
-          els.codeSuggestion.classList.remove('hidden');
-          els.codeSuggestion.classList.add('flex');
+          showCodeSuggestion(value, typed, { line: cursor.line, ch: cursor.ch - length }, { line: cursor.line, ch: cursor.ch });
           return;
         }
       }
@@ -1114,8 +1317,7 @@
     }
 
     editor.on('change', () => {
-      maybeCompleteRequiredText();
-      updateTabCompletion();
+      updateContextualSuggestion();
       clearTimeout(draftSaveTimer);
       clearTimeout(liveUpdateTimer);
       draftSaveTimer = setTimeout(() => {
@@ -1127,7 +1329,7 @@
 
     editor.on('cursorActivity', () => {
       // Une suggestion n'est valable qu'à la position où elle a été détectée.
-      if (pendingTabCompletion) updateTabCompletion();
+      if (pendingTabCompletion) updateContextualSuggestion();
     });
 
     /* ================================================================
@@ -1279,6 +1481,7 @@
       document.body.dataset.mobileView = view;
       document.querySelectorAll('#mobile-tabbar [data-mobile-view]').forEach(button => button.classList.toggle('active', button.dataset.mobileView === view));
       if (view === 'code') setTimeout(() => editor.refresh(), 0);
+      if (view === 'result') document.body.classList.remove('preview-collapsed');
       if (view === 'result' && els.feedback.classList.contains('hidden')) renderLiveUpdate();
     }
 
@@ -1291,9 +1494,16 @@
       document.body.classList.toggle('keyboard-open', keyboardHeight > 140);
     }
 
-    $('run-btn').addEventListener('click', () => {
-      validateCode();
-      if (window.innerWidth <= 900) setMobileView('result');
+    $('suggestion-accept').addEventListener('click', acceptTabCompletion);
+    els.mobileMissionTasks.addEventListener('click', event => {
+      const insertButton = event.target.closest('[data-insert-task]');
+      if (insertButton) insertTaskSuggestion(Number(insertButton.dataset.insertTask));
+    });
+    $('result-tab').addEventListener('click', () => {
+      if (window.innerWidth > 900 || document.body.dataset.mobileView !== 'code') return;
+      const collapsed = document.body.classList.toggle('preview-collapsed');
+      $('preview-toggle-icon').textContent = collapsed ? '⌃' : '⌄';
+      if (!collapsed) renderLiveUpdate();
     });
     els.prevBtn.addEventListener('click', () => goToLesson(currentIndex - 1));
     els.nextBtn.addEventListener('click', () => goToLesson(currentIndex + 1));
