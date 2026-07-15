@@ -72,7 +72,9 @@
     .mobile-tabbar { display: none; }
     .mobile-only-action { display: none; }
     .mobile-mission-strip { display: none; }
-    @media (max-width: 900px) {
+    /* Le mode compact couvre aussi les téléphones en paysage et les navigateurs
+       mobiles qui demandent une largeur proche d'une « version ordinateur ». */
+    @media (max-width: 1100px) {
       html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
       body > div { height: 100dvh; min-height: 0; }
       header { height: 3.5rem !important; padding-inline: .75rem !important; }
@@ -167,7 +169,7 @@
       50% { transform: translateX(4px); background: rgba(245,158,11,.13); }
       75% { transform: translateX(-2px); }
     }
-    @media (max-width: 900px) and (max-height: 700px) {
+    @media (max-width: 1100px) and (max-height: 700px) {
       #editor-actions p { display: none; }
       #editor-actions { justify-content: flex-end; }
       body[data-mobile-view="code"] #output-panel { max-height: 24%; flex-basis: 24%; }
@@ -262,6 +264,7 @@
           <div class="mobile-mission-heading">
             <button id="mobile-back-course" class="rounded-lg border border-brand-400/25 bg-brand-400/10 px-2 text-[10px] font-bold text-brand-300">← Cours</button>
             <div class="min-w-0 flex-1">
+              <p class="text-[8px] font-extrabold uppercase tracking-[.18em] text-brand-300">Objectif actuel</p>
               <p id="mobile-mission-title" class="truncate text-xs font-extrabold text-white"></p>
               <p id="mobile-mission-number" class="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-slate-500"></p>
             </div>
