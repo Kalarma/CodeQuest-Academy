@@ -71,12 +71,14 @@
     .status-dot { box-shadow: 0 0 0 3px rgba(52, 211, 153, .12); }
     .mobile-tabbar { display: none; }
     .mobile-only-action { display: none; }
+    .mobile-mission-strip { display: none; }
     @media (max-width: 900px) {
       html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
       body > div { height: 100dvh; min-height: 0; }
       header { height: 3.5rem !important; padding-inline: .75rem !important; }
       #workspace { display: block; height: calc(100dvh - 7.15rem) !important; min-height: 0; }
       #lesson-panel, #practice-panel { height: 100%; min-height: 0; border-right: 0; }
+      #practice-panel { overflow: hidden; }
       body:not([data-mobile-view]) #lesson-panel,
       body[data-mobile-view="course"] #lesson-panel { display: flex; }
       body:not([data-mobile-view]) #practice-panel,
@@ -94,12 +96,20 @@
         border-top: 1px solid #253047;
         background: rgba(13, 17, 27, .98);
         padding: .25rem max(.35rem, env(safe-area-inset-right)) max(.25rem, env(safe-area-inset-bottom)) max(.35rem, env(safe-area-inset-left));
-        z-index: 40;
+        z-index: 100;
+        pointer-events: auto;
+        touch-action: manipulation;
       }
-      .mobile-view-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; border-radius: .6rem; color: #64748b; font-size: .64rem; font-weight: 700; transition: .2s; }
+      .mobile-view-button { display: flex; min-height: 44px; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; border-radius: .6rem; color: #64748b; font-size: .64rem; font-weight: 700; transition: .2s; touch-action: manipulation; }
       .mobile-view-button > span:first-child { font-family: 'JetBrains Mono', monospace; font-size: .75rem; }
       .mobile-view-button.active { background: rgba(14, 165, 233, .1); color: #7dd3fc; }
       .mobile-only-action { display: flex; }
+      body[data-mobile-view="code"] .mobile-mission-strip,
+      body[data-mobile-view="result"] .mobile-mission-strip { display: block; }
+      .mobile-mission-strip { flex: 0 0 auto; border-bottom: 1px solid #253047; background: linear-gradient(135deg, rgba(14,165,233,.1), rgba(99,102,241,.06)); padding: .65rem .8rem; }
+      .mobile-mission-heading { display: flex; align-items: center; gap: .55rem; }
+      .mobile-mission-heading button { min-width: 44px; min-height: 36px; touch-action: manipulation; }
+      .mobile-mission-detail { margin-top: .45rem; display: -webkit-box; overflow: hidden; color: #cbd5e1; font-size: .69rem; line-height: 1.15rem; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 
       #lesson-panel > div:nth-child(3) { padding: 1.15rem 1rem 1.5rem; }
       #lesson-content { max-width: none; }
@@ -113,14 +123,17 @@
       body[data-mobile-view="result"] #editor-shell,
       body[data-mobile-view="result"] #editor-actions { display: none; }
       body[data-mobile-view="result"] #output-panel { min-height: 0; flex: 1 1 auto; }
-      body[data-mobile-view="result"] #practice-panel > div:first-child { display: none; }
+      body[data-mobile-view="result"] #file-tabbar { display: none; }
       #editor-actions { padding: .5rem .75rem; }
       #editor-actions p { max-width: 55%; font-size: .58rem; line-height: 1rem; }
       #run-btn { padding: .65rem .8rem; }
-      .CodeMirror { font-size: 13px; line-height: 1.6; }
+      .CodeMirror { font-size: 12px; line-height: 1.55; touch-action: pan-x pan-y; }
+      .CodeMirror-scroll, .CodeMirror-lines, .CodeMirror textarea { touch-action: manipulation; }
 
       body.keyboard-open #output-panel { display: none !important; }
       body.keyboard-open #editor-shell { flex: 1 1 auto !important; min-height: 0; }
+      body.keyboard-open .mobile-mission-strip { padding-block: .35rem; }
+      body.keyboard-open .mobile-mission-detail { display: none; }
       body.keyboard-open #editor-actions p { display: none; }
       body.keyboard-open #editor-actions { justify-content: flex-end; padding-block: .35rem; }
       body.keyboard-open #run-btn { padding-block: .5rem; }
@@ -219,7 +232,19 @@
 
       <!-- PANNEAU PRATIQUE -->
       <section id="practice-panel" class="flex min-h-0 flex-col bg-ink-950">
-        <div class="flex h-11 shrink-0 items-center justify-between border-b border-slate-800 bg-ink-900 px-4">
+        <div id="mobile-mission-strip" class="mobile-mission-strip">
+          <div class="mobile-mission-heading">
+            <button id="mobile-back-course" class="rounded-lg border border-brand-400/25 bg-brand-400/10 px-2 text-[10px] font-bold text-brand-300">← Cours</button>
+            <div class="min-w-0 flex-1">
+              <p id="mobile-mission-title" class="truncate text-xs font-extrabold text-white"></p>
+              <p id="mobile-mission-number" class="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-slate-500"></p>
+            </div>
+            <span id="mobile-mission-progress" class="shrink-0 rounded-full border border-slate-700 bg-ink-900 px-2 py-1 font-mono text-[10px] text-brand-300">0 / 0</span>
+          </div>
+          <p id="mobile-mission-detail" class="mobile-mission-detail"></p>
+        </div>
+
+        <div id="file-tabbar" class="flex h-11 shrink-0 items-center justify-between border-b border-slate-800 bg-ink-900 px-4">
           <div class="flex h-full items-center">
             <div class="flex h-full items-center gap-2 border-b-2 border-brand-400 px-3 font-mono text-xs text-slate-200">
               <span id="file-icon" class="font-bold text-orange-400">&lt;/&gt;</span>
@@ -883,7 +908,9 @@
       fileName: $('file-name'), fileIcon: $('file-icon'), prevBtn: $('prev-btn'), nextBtn: $('next-btn'),
       lessonDots: $('lesson-dots'), progressBar: $('progress-bar'), progressLabel: $('progress-label'),
       emptyState: $('empty-state'), feedback: $('feedback'), preview: $('html-preview'), resultArea: $('result-area'),
-      codeSuggestion: $('code-suggestion'), suggestionValue: $('suggestion-value')
+      codeSuggestion: $('code-suggestion'), suggestionValue: $('suggestion-value'),
+      mobileMissionTitle: $('mobile-mission-title'), mobileMissionNumber: $('mobile-mission-number'),
+      mobileMissionDetail: $('mobile-mission-detail'), mobileMissionProgress: $('mobile-mission-progress')
     };
 
     function currentLesson() { return COURSE_CATALOG.lessons[currentIndex]; }
@@ -904,6 +931,9 @@
       els.lessonSubtitle.textContent = lesson.subtitle;
       els.lessonExplanation.innerHTML = lesson.explanation.map(p => `<p>${p}</p>`).join('');
       els.missionText.textContent = lesson.mission;
+      els.mobileMissionTitle.textContent = lesson.title;
+      els.mobileMissionNumber.textContent = `${language.label} · Leçon ${currentIndex + 1} / ${COURSE_CATALOG.lessons.length}`;
+      els.mobileMissionDetail.textContent = lesson.mission;
       els.lessonTip.innerHTML = lesson.tip;
       els.fileName.textContent = language.fileName;
       els.fileIcon.textContent = language.icon;
@@ -945,6 +975,9 @@
 
     function renderRequirementProgress(code) {
       const lesson = currentLesson();
+      const passedRules = lesson.rules.filter(rule => rule.regex.test(code)).length;
+      els.mobileMissionProgress.textContent = `${passedRules} / ${lesson.rules.length}`;
+      els.mobileMissionProgress.classList.toggle('text-emerald-300', passedRules === lesson.rules.length);
       els.requirementsList.innerHTML = lesson.requirements.map((item, index) => {
         // Lorsqu'il y a plus de libellés que de règles, la dernière règle couvre les derniers détails liés.
         const rule = lesson.rules[Math.min(index, lesson.rules.length - 1)];
@@ -1300,11 +1333,9 @@
       if (button) setMobileView(button.dataset.mobileView);
     });
     $('mobile-start-code').addEventListener('click', () => setMobileView('code'));
+    $('mobile-back-course').addEventListener('click', () => setMobileView('course'));
     editor.on('focus', () => {
-      if (window.innerWidth <= 900) {
-        setMobileView('code');
-        document.body.classList.add('keyboard-open');
-      }
+      if (window.innerWidth <= 900) setMobileView('code');
     });
     editor.on('blur', () => setTimeout(updateKeyboardState, 120));
     window.visualViewport?.addEventListener('resize', updateKeyboardState);
