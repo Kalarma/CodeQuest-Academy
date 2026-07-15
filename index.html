@@ -69,6 +69,11 @@
     @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
     .modal-backdrop { backdrop-filter: blur(8px); }
     .status-dot { box-shadow: 0 0 0 3px rgba(52, 211, 153, .12); }
+    #lesson-dots { max-width: min(48vw, 620px); overflow-x: auto; padding: .2rem; scrollbar-width: none; }
+    #lesson-dots::-webkit-scrollbar { display: none; }
+    #game-editor-shell .CodeMirror { min-height: 260px; height: 100%; }
+    .achievement-unlocked { border-color: rgba(52, 211, 153, .28); background: rgba(52, 211, 153, .06); color: #a7f3d0; }
+    .achievement-locked { border-color: rgba(71, 85, 105, .5); background: rgba(15, 23, 42, .45); color: #64748b; }
     .mobile-tabbar { display: none; }
     .mobile-only-action { display: none; }
     .mobile-mission-strip { display: none; }
@@ -157,6 +162,16 @@
 
       #glossary-modal { padding: 0; }
       #glossary-modal > div { height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+      #account-modal, #game-modal { padding: 0; }
+      #account-modal > div, #game-modal > div { height: 100dvh; max-height: none; border-radius: 0; border: 0; }
+      /* Les modales doivent rester au-dessus de la barre d'onglets mobile. */
+      #glossary-modal, #account-modal, #game-modal { z-index: 150; }
+      #game-play > div:last-child { grid-template-rows: minmax(145px, 42%) minmax(0, 58%); }
+      #game-play aside { padding: .9rem 1rem; }
+      #game-mission { margin-top: .65rem; font-size: .75rem; line-height: 1.2rem; }
+      #game-requirements { margin-top: .75rem; font-size: .66rem; }
+      #game-editor-shell { min-height: 0; }
+      #game-editor-shell .CodeMirror { min-height: 190px; }
     }
     @keyframes taskComplete {
       0% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 rgba(52,211,153,0); }
@@ -192,13 +207,20 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-3 sm:gap-5">
+      <div class="flex items-center gap-1.5 sm:gap-3">
         <div class="hidden min-w-44 sm:block">
           <div class="mb-1.5 flex justify-between text-[11px] font-medium text-slate-400">
             <span>Progression</span><span id="progress-label">0 / 6</span>
           </div>
           <div class="h-1.5 overflow-hidden rounded-full bg-slate-800"><div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-brand-500 to-indigo-400 transition-all duration-500" style="width: 0%"></div></div>
         </div>
+        <button id="game-btn" class="flex min-h-10 items-center gap-2 rounded-xl border border-violet-400/25 bg-violet-400/10 px-2.5 text-xs font-extrabold text-violet-200 transition hover:border-violet-300/50 hover:bg-violet-400/15" title="Sprint Révision">
+          <span aria-hidden="true">⚡</span><span class="hidden md:inline">Sprint</span>
+        </button>
+        <button id="account-btn" class="flex min-h-10 items-center gap-2 rounded-xl border border-slate-700 bg-slate-800/70 px-2 transition hover:border-brand-400/40" title="Profils et progression">
+          <span id="account-avatar" class="grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-brand-400 to-indigo-500 text-[11px] font-black text-white">J</span>
+          <span class="hidden text-left lg:block"><span id="account-name" class="block max-w-28 truncate text-[11px] font-bold text-white">Joueur</span><span id="header-level" class="block text-[9px] font-semibold text-brand-300">Niveau 1</span></span>
+        </button>
         <button id="reset-btn" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-slate-600 hover:bg-slate-800 hover:text-white" title="Réinitialiser la progression"><span class="hidden sm:inline">Réinitialiser</span><span class="sm:hidden">↺</span></button>
       </div>
     </header>
@@ -348,6 +370,80 @@
     </div>
   </div>
 
+  <!-- PROFILS LOCAUX ET PROGRESSION -->
+  <div id="account-modal" class="modal-backdrop fixed inset-0 z-[60] hidden items-center justify-center bg-black/75 p-4" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+    <div class="fade-up flex h-[min(860px,92vh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-ink-850 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+        <div><h2 id="account-modal-title" class="font-bold text-white">Profil et progression</h2><p class="mt-0.5 text-xs text-slate-500">Profils locaux, niveaux et sauvegardes transportables.</p></div>
+        <button id="close-account" class="grid h-10 w-10 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-700 hover:text-white" aria-label="Fermer">✕</button>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+        <section class="rounded-2xl border border-brand-400/20 bg-gradient-to-br from-brand-400/10 to-indigo-500/10 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3"><span id="profile-avatar-large" class="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-brand-400 to-indigo-500 text-lg font-black text-white">J</span><div><p id="profile-name-large" class="font-extrabold text-white">Joueur</p><p id="profile-level-label" class="text-xs font-semibold text-brand-300">Niveau 1</p></div></div>
+            <div class="min-w-52 flex-1 sm:max-w-sm"><div class="mb-1 flex justify-between text-[10px] font-bold text-slate-400"><span id="profile-xp-label">0 XP</span><span id="profile-next-level">500 XP avant le niveau suivant</span></div><div class="h-2 overflow-hidden rounded-full bg-ink-950"><div id="profile-xp-bar" class="h-full rounded-full bg-gradient-to-r from-brand-400 to-indigo-400 transition-all" style="width:0%"></div></div></div>
+          </div>
+        </section>
+
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Cours réussis</p><p id="stat-completed" class="mt-2 text-xl font-black text-white">0</p></div>
+          <div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Série actuelle</p><p id="stat-streak" class="mt-2 text-xl font-black text-amber-300">1 jour</p></div>
+          <div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Meilleur Sprint</p><p id="stat-best-score" class="mt-2 text-xl font-black text-violet-300">0</p></div>
+          <div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Défis réussis</p><p id="stat-game-correct" class="mt-2 text-xl font-black text-emerald-300">0</p></div>
+        </div>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          <section class="rounded-xl border border-slate-700 bg-ink-900/70 p-4">
+            <h3 class="text-sm font-bold text-white">Progression par langage</h3>
+            <div id="language-progress" class="mt-4 space-y-4"></div>
+          </section>
+          <section class="rounded-xl border border-slate-700 bg-ink-900/70 p-4">
+            <h3 class="text-sm font-bold text-white">Succès</h3>
+            <div id="achievements-list" class="mt-4 grid grid-cols-2 gap-2"></div>
+          </section>
+        </div>
+
+        <div class="mt-6 grid gap-5 lg:grid-cols-2">
+          <section class="rounded-xl border border-slate-700 bg-ink-900/70 p-4">
+            <div class="flex items-center justify-between"><div><h3 class="text-sm font-bold text-white">Profils locaux</h3><p class="mt-1 text-[10px] text-slate-500">Chaque profil possède sa progression et ses brouillons.</p></div></div>
+            <div id="profile-list" class="mt-4 space-y-2"></div>
+            <form id="create-profile-form" class="mt-4 flex gap-2"><input id="new-profile-name" maxlength="24" required placeholder="Nom du nouveau profil" class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-ink-950 px-3 py-2.5 text-xs text-white outline-none focus:border-brand-400"><button class="rounded-lg bg-brand-500 px-4 text-xs font-extrabold text-white">Créer</button></form>
+          </section>
+          <section class="rounded-xl border border-slate-700 bg-ink-900/70 p-4">
+            <h3 class="text-sm font-bold text-white">Sauvegarde</h3>
+            <p class="mt-1 text-xs leading-5 text-slate-500">Les profils sont enregistrés sur cet appareil. Exportez une sauvegarde pour les transférer vers un autre téléphone ou ordinateur.</p>
+            <div class="mt-4 grid gap-2 sm:grid-cols-2"><button id="export-backup" class="min-h-11 rounded-lg border border-emerald-400/25 bg-emerald-400/10 px-3 text-xs font-bold text-emerald-200">Exporter la sauvegarde</button><label class="grid min-h-11 cursor-pointer place-items-center rounded-lg border border-brand-400/25 bg-brand-400/10 px-3 text-center text-xs font-bold text-brand-200">Importer une sauvegarde<input id="import-backup" type="file" accept="application/json,.json" class="hidden"></label></div>
+            <p id="backup-status" class="mt-3 min-h-5 text-xs text-slate-500"></p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRINT RÉVISION : défis tirés uniquement des leçons réussies. -->
+  <div id="game-modal" class="modal-backdrop fixed inset-0 z-[70] hidden items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-labelledby="game-title">
+    <div class="fade-up flex h-[min(900px,94vh)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-violet-400/25 bg-ink-850 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4"><div><h2 id="game-title" class="font-bold text-white">⚡ Sprint Révision</h2><p class="mt-0.5 text-xs text-slate-500">Des défis construits uniquement à partir de vos cours réussis.</p></div><button id="close-game" class="grid h-10 w-10 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-700 hover:text-white" aria-label="Fermer">✕</button></div>
+
+      <section id="game-home" class="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
+        <div class="mx-auto max-w-2xl text-center"><div class="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-violet-500 to-brand-500 text-4xl shadow-xl shadow-violet-500/20">⚡</div><h3 class="mt-5 text-2xl font-black text-white">Révisez sans réciter</h3><p class="mt-3 text-sm leading-6 text-slate-400">Une partie choisit jusqu’à cinq anciennes missions. Trois vies, un score et des XP supplémentaires — mais aucun nouveau concept avant de l’avoir appris.</p></div>
+        <div class="mx-auto mt-7 grid max-w-2xl grid-cols-3 gap-3"><div class="rounded-xl border border-slate-700 bg-ink-900 p-4 text-center"><p id="game-home-lessons" class="text-xl font-black text-brand-300">0</p><p class="mt-1 text-[10px] uppercase text-slate-500">Cours disponibles</p></div><div class="rounded-xl border border-slate-700 bg-ink-900 p-4 text-center"><p id="game-home-best" class="text-xl font-black text-violet-300">0</p><p class="mt-1 text-[10px] uppercase text-slate-500">Meilleur score</p></div><div class="rounded-xl border border-slate-700 bg-ink-900 p-4 text-center"><p class="text-xl font-black text-red-300">3</p><p class="mt-1 text-[10px] uppercase text-slate-500">Vies</p></div></div>
+        <p id="game-lock-message" class="mx-auto mt-5 max-w-xl rounded-xl border border-amber-400/20 bg-amber-400/[.06] p-4 text-center text-xs leading-5 text-amber-100/70"></p>
+        <button id="start-game" class="mx-auto mt-5 flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 to-brand-500 px-8 text-sm font-black text-white shadow-lg shadow-violet-500/20 disabled:cursor-not-allowed disabled:opacity-40">Lancer le Sprint</button>
+      </section>
+
+      <section id="game-play" class="hidden min-h-0 flex-1 flex-col">
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-ink-900 px-4 py-3 text-xs"><span id="game-round" class="rounded-full bg-violet-400/10 px-3 py-1 font-bold text-violet-200">Défi 1 / 5</span><span id="game-score" class="font-mono font-bold text-brand-300">Score 0</span><span id="game-lives" class="ml-auto tracking-widest text-red-300">♥♥♥</span></div>
+        <div class="grid min-h-0 flex-1 lg:grid-cols-[340px_minmax(0,1fr)]">
+          <aside class="min-h-0 overflow-y-auto border-b border-slate-700 bg-ink-850 p-5 lg:border-b-0 lg:border-r"><p id="game-language" class="text-[10px] font-extrabold uppercase tracking-widest text-violet-300">HTML</p><h3 id="game-lesson-title" class="mt-2 text-xl font-black text-white"></h3><p id="game-mission" class="mt-4 text-sm font-semibold leading-6 text-slate-200"></p><ul id="game-requirements" class="mt-5 space-y-2 text-xs text-slate-400"></ul><div id="game-feedback" class="mt-5 hidden rounded-xl border p-4 text-xs leading-5"></div></aside>
+          <div class="flex min-h-0 flex-col bg-ink-950"><div id="game-editor-shell" class="min-h-[260px] flex-1 overflow-hidden"><textarea id="game-code-editor" aria-label="Éditeur du Sprint"></textarea></div><div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-700 bg-ink-900 p-4"><p class="text-[10px] text-slate-500">Les suggestions de texte sont désactivées dans le Sprint.</p><button id="check-game" class="min-h-11 rounded-lg bg-violet-500 px-5 text-xs font-black text-white transition hover:bg-violet-400">Vérifier le défi</button></div></div>
+        </div>
+      </section>
+
+      <section id="game-result" class="hidden min-h-0 flex-1 overflow-y-auto p-6 text-center sm:p-10"><div class="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-emerald-400/10 text-4xl">🏆</div><h3 class="mt-5 text-2xl font-black text-white">Sprint terminé</h3><p id="game-result-summary" class="mt-3 text-sm text-slate-400"></p><div class="mx-auto mt-6 grid max-w-lg grid-cols-3 gap-3"><div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p id="game-result-score" class="text-xl font-black text-violet-300">0</p><p class="text-[10px] text-slate-500">SCORE</p></div><div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p id="game-result-correct" class="text-xl font-black text-emerald-300">0</p><p class="text-[10px] text-slate-500">RÉUSSIS</p></div><div class="rounded-xl border border-slate-700 bg-ink-900 p-4"><p id="game-result-xp" class="text-xl font-black text-brand-300">+0</p><p class="text-[10px] text-slate-500">XP</p></div></div><div class="mt-7 flex justify-center gap-3"><button id="replay-game" class="min-h-11 rounded-lg bg-violet-500 px-5 text-xs font-black text-white">Rejouer</button><button id="finish-game" class="min-h-11 rounded-lg border border-slate-700 px-5 text-xs font-bold text-slate-300">Retour aux cours</button></div></section>
+    </div>
+  </div>
+
   <!-- CodeMirror et ses modules. L'ordre de chargement des modes est important pour PHP. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
@@ -362,6 +458,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/xml-hint.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/html-hint.min.js"></script>
+  <script src="lessons-advanced.js"></script>
 
   <script>
     'use strict';
@@ -817,6 +914,9 @@
       ]
     };
 
+    // Le curriculum avancé est chargé séparément pour garder les données modulaires.
+    COURSE_CATALOG.lessons.push(...(window.CODEQUEST_ADVANCED_LESSONS || []));
+
     // Le catalogue reste organisé par langage même lorsque de nouvelles leçons sont ajoutées plus tard dans le fichier.
     const LANGUAGE_ORDER = ['html', 'php'];
     COURSE_CATALOG.lessons.sort((a, b) => {
@@ -858,18 +958,67 @@
        2. ÉTAT ET SAUVEGARDE
        ================================================================ */
     const STORAGE_KEY = 'codequest-academy-progress-v1';
+    const ACCOUNT_STORE_KEY = 'codequest-academy-accounts-v2';
     const MOBILE_BREAKPOINT = 1100;
-    const defaultState = { currentLessonId: COURSE_CATALOG.lessons[0].id, lastCompletedLessonId: null, completedLessonIds: [], drafts: {}, navigationMode: 'guided' };
+    const XP_PER_LEVEL = 500;
+    const defaultState = {
+      currentLessonId: COURSE_CATALOG.lessons[0].id,
+      lastCompletedLessonId: null,
+      completedLessonIds: [],
+      rewardedLessonIds: [],
+      drafts: {},
+      navigationMode: 'guided',
+      xp: 0,
+      activity: { lastDate: null, streak: 0, bestStreak: 0 },
+      gameStats: { sessions: 0, bestScore: 0, totalCorrect: 0 }
+    };
 
-    function loadState() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (!saved || !COURSE_CATALOG.lessons.some(l => l.id === saved.currentLessonId)) return structuredClone(defaultState);
-        return { ...structuredClone(defaultState), ...saved, completedLessonIds: saved.completedLessonIds || [], drafts: saved.drafts || {} };
-      } catch { return structuredClone(defaultState); }
+    function normalizeState(saved = {}) {
+      const validIds = new Set(COURSE_CATALOG.lessons.map(lesson => lesson.id));
+      const completedLessonIds = [...new Set(saved.completedLessonIds || [])].filter(id => validIds.has(id));
+      const rewardedLessonIds = [...new Set(saved.rewardedLessonIds || completedLessonIds)].filter(id => validIds.has(id));
+      const currentLessonId = validIds.has(saved.currentLessonId) ? saved.currentLessonId : COURSE_CATALOG.lessons[0].id;
+      return {
+        ...structuredClone(defaultState),
+        ...saved,
+        currentLessonId,
+        completedLessonIds,
+        rewardedLessonIds,
+        drafts: saved.drafts && typeof saved.drafts === 'object' ? saved.drafts : {},
+        xp: Number.isFinite(saved.xp) ? Math.max(0, saved.xp) : completedLessonIds.length * 100,
+        activity: { ...structuredClone(defaultState.activity), ...(saved.activity || {}) },
+        gameStats: { ...structuredClone(defaultState.gameStats), ...(saved.gameStats || {}) }
+      };
     }
 
-    let state = loadState();
+    function createProfileId() {
+      return globalThis.crypto?.randomUUID?.() || `profile-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    function createProfile(name, profileState = defaultState) {
+      const now = new Date().toISOString();
+      return { id: createProfileId(), name: String(name || 'Joueur').trim().slice(0, 24) || 'Joueur', createdAt: now, updatedAt: now, state: normalizeState(profileState) };
+    }
+
+    function loadAccountStore() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(ACCOUNT_STORE_KEY));
+        if (parsed?.accounts?.length) {
+          parsed.accounts = parsed.accounts.map(account => ({ ...account, name: String(account.name || 'Joueur').slice(0, 24), state: normalizeState(account.state) }));
+          if (!parsed.accounts.some(account => account.id === parsed.activeId)) parsed.activeId = parsed.accounts[0].id;
+          return parsed;
+        }
+      } catch { /* La sauvegarde v2 sera recréée depuis la v1. */ }
+
+      let legacyState = defaultState;
+      try { legacyState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState; } catch { /* Aucun ancien état valide. */ }
+      const migrated = createProfile('Joueur', legacyState);
+      return { version: 2, activeId: migrated.id, accounts: [migrated] };
+    }
+
+    let accountStore = loadAccountStore();
+    let activeAccount = accountStore.accounts.find(account => account.id === accountStore.activeId) || accountStore.accounts[0];
+    let state = normalizeState(activeAccount.state);
     let currentIndex = Math.max(0, COURSE_CATALOG.lessons.findIndex(l => l.id === state.currentLessonId));
     currentIndex = Math.min(currentIndex, getAccessibleLessonIndex());
     let selectedBookIndex = currentIndex;
@@ -878,9 +1027,39 @@
     let pendingTabCompletion = null;
     let autoValidationTimer = null;
     let renderedTaskSignature = '';
+    let gameSession = null;
     const taskStatesByLesson = new Map();
 
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function saveState() {
+      activeAccount.state = normalizeState(state);
+      activeAccount.updatedAt = new Date().toISOString();
+      accountStore.activeId = activeAccount.id;
+      localStorage.setItem(ACCOUNT_STORE_KEY, JSON.stringify(accountStore));
+      // Copie de compatibilité pour les utilisateurs de la première version.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function localDateKey(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function registerDailyActivity() {
+      const today = localDateKey();
+      const activity = state.activity;
+      if (activity.lastDate === today) return;
+      const previous = activity.lastDate ? new Date(`${activity.lastDate}T12:00:00`) : null;
+      const now = new Date(`${today}T12:00:00`);
+      const difference = previous ? Math.round((now - previous) / 86400000) : null;
+      activity.streak = difference === 1 ? activity.streak + 1 : 1;
+      activity.bestStreak = Math.max(activity.bestStreak, activity.streak);
+      activity.lastDate = today;
+      saveState();
+    }
+
+    function playerLevel() { return Math.floor(state.xp / XP_PER_LEVEL) + 1; }
+    function xpInsideLevel() { return state.xp % XP_PER_LEVEL; }
+
+    registerDailyActivity();
 
     function getUnlockedLessonIndex() {
       let firstIncomplete = 0;
@@ -904,8 +1083,11 @@
       for (const languageId of LANGUAGE_ORDER) {
         const language = COURSE_CATALOG.languages[languageId];
         html += `<optgroup label="Module ${language.label}">`;
+        let languageNumber = 0;
         COURSE_CATALOG.lessons.forEach((lesson, index) => {
-          if (lesson.language === languageId) html += `<option value="${index}">${index + 1}. ${escapeHtml(lesson.title)}</option>`;
+          if (lesson.language !== languageId) return;
+          languageNumber++;
+          html += `<option value="${index}">${languageNumber}. ${escapeHtml(lesson.title)}</option>`;
         });
         html += '</optgroup>';
       }
@@ -917,6 +1099,15 @@
       $('navigation-mode-btn').textContent = isFree ? 'Libre 🔓' : 'Guidé 🔒';
       $('navigation-mode-btn').classList.toggle('text-brand-300', isFree);
       $('lesson-selector').value = String(currentIndex);
+    }
+
+    function renderAccountHeader() {
+      const initial = activeAccount.name.trim().charAt(0).toLocaleUpperCase('fr') || 'J';
+      $('account-avatar').textContent = initial;
+      $('account-name').textContent = activeAccount.name;
+      $('header-level').textContent = `Niveau ${playerLevel()} · ${state.xp} XP`;
+      const availableChallenges = state.completedLessonIds.length;
+      $('game-btn').title = availableChallenges ? `Sprint Révision · ${availableChallenges} cours disponibles` : 'Sprint verrouillé · terminez une leçon';
     }
 
     /* ================================================================
@@ -936,6 +1127,13 @@
       }
     });
 
+    const gameEditor = CodeMirror.fromTextArea(document.getElementById('game-code-editor'), {
+      theme: 'material-darker', mode: 'htmlmixed', lineNumbers: true, lineWrapping: false,
+      indentUnit: 2, tabSize: 2, indentWithTabs: false, autoCloseTags: true,
+      autoCloseBrackets: true, styleActiveLine: true, matchBrackets: true,
+      extraKeys: { 'Ctrl-Space': 'autocomplete', 'Tab': cm => cm.execCommand('insertSoftTab') }
+    });
+
     const $ = id => document.getElementById(id);
     const els = {
       lessonContent: $('lesson-content'), languageBadge: $('language-badge'), lessonNumber: $('lesson-number'),
@@ -953,6 +1151,17 @@
 
     function currentLesson() { return COURSE_CATALOG.lessons[currentIndex]; }
 
+    function getLanguageProgress(languageId) {
+      const lessons = COURSE_CATALOG.lessons.filter(lesson => lesson.language === languageId);
+      const completed = lessons.filter(lesson => state.completedLessonIds.includes(lesson.id)).length;
+      return { completed, total: lessons.length };
+    }
+
+    function getLessonLanguagePosition(lesson) {
+      const lessons = COURSE_CATALOG.lessons.filter(item => item.language === lesson.language);
+      return { current: lessons.findIndex(item => item.id === lesson.id) + 1, total: lessons.length };
+    }
+
     function renderLesson() {
       const lesson = currentLesson();
       const language = COURSE_CATALOG.languages[lesson.language];
@@ -966,13 +1175,14 @@
       els.lessonContent.classList.add('fade-up');
       els.languageBadge.textContent = language.label;
       els.languageBadge.className = `rounded-md border px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider ${lesson.language === 'php' ? 'border-indigo-400/20 bg-indigo-400/10 text-indigo-300' : 'border-orange-400/20 bg-orange-400/10 text-orange-300'}`;
-      els.lessonNumber.textContent = `Leçon ${currentIndex + 1} sur ${COURSE_CATALOG.lessons.length}`;
+      const languagePosition = getLessonLanguagePosition(lesson);
+      els.lessonNumber.textContent = `Leçon ${languagePosition.current} sur ${languagePosition.total} · ${currentIndex + 1}/${COURSE_CATALOG.lessons.length} au total`;
       els.lessonTitle.textContent = lesson.title;
       els.lessonSubtitle.textContent = lesson.subtitle;
       els.lessonExplanation.innerHTML = lesson.explanation.map(p => `<p>${p}</p>`).join('');
       els.missionText.textContent = lesson.mission;
       els.mobileMissionTitle.textContent = lesson.title;
-      els.mobileMissionNumber.textContent = `${language.label} · Leçon ${currentIndex + 1} / ${COURSE_CATALOG.lessons.length}`;
+      els.mobileMissionNumber.textContent = `${language.label} · Leçon ${languagePosition.current} / ${languagePosition.total}`;
       els.mobileMissionDetail.textContent = lesson.mission;
       els.lessonTip.innerHTML = lesson.tip;
       els.fileName.textContent = language.fileName;
@@ -1004,6 +1214,7 @@
       const count = state.completedLessonIds.length;
       els.progressLabel.textContent = `${count} / ${COURSE_CATALOG.lessons.length}`;
       els.progressBar.style.width = `${count / COURSE_CATALOG.lessons.length * 100}%`;
+      renderAccountHeader();
     }
 
     function clearResult() {
@@ -1327,7 +1538,13 @@
             <ul class="mt-3 space-y-2">${failedRules.map(rule => `<li class="flex gap-2 text-xs leading-5 text-slate-300"><span class="text-red-400">→</span><span>${escapeHtml(rule.hint)}</span></li>`).join('')}</ul></div></div>
           </div>`;
       } else {
-        if (!state.completedLessonIds.includes(lesson.id)) state.completedLessonIds.push(lesson.id);
+        const firstCompletion = !state.completedLessonIds.includes(lesson.id);
+        if (firstCompletion) state.completedLessonIds.push(lesson.id);
+        const earnsLessonXp = !state.rewardedLessonIds.includes(lesson.id);
+        if (earnsLessonXp) {
+          state.rewardedLessonIds.push(lesson.id);
+          state.xp += 100;
+        }
         state.lastCompletedLessonId = lesson.id;
         saveState();
         renderNavigation();
@@ -1338,6 +1555,7 @@
             <div class="flex items-start gap-3"><div class="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-400/15 font-bold text-emerald-300">✓</div>
             <div class="flex-1"><h3 class="text-sm font-bold text-emerald-200">${isLast ? 'Parcours terminé !' : 'Mission accomplie !'}</h3>
             <p class="mt-1 text-xs leading-5 text-emerald-100/60">${isLast ? 'Vous avez validé toutes les missions disponibles.' : 'Votre code répond à tous les objectifs. La prochaine leçon est débloquée.'}</p>
+            ${earnsLessonXp ? '<div class="mt-3 inline-flex rounded-full bg-brand-400/10 px-3 py-1 text-[10px] font-extrabold text-brand-300">+100 XP · nouvelle réussite</div>' : ''}
             ${lesson.language === 'php' ? `<div class="mt-3 rounded-lg border border-slate-700 bg-ink-950 p-3 font-mono text-xs text-slate-300"><span class="text-slate-600">Sortie › </span>${escapeHtml(lesson.output || '')}</div>` : ''}
             ${!isLast ? '<button id="feedback-next" class="mt-3 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-emerald-950 transition hover:bg-emerald-400">Leçon suivante →</button>' : ''}</div></div>
           </div>`;
@@ -1366,7 +1584,272 @@
     }
 
     /* ================================================================
-       5. LIVRE DES LEÇONS ET ÉVÉNEMENTS
+       5. PROFILS, PROGRESSION ET SAUVEGARDES
+       ================================================================ */
+    const ACHIEVEMENTS = [
+      { icon: '🌱', title: 'Premier pas', test: () => state.completedLessonIds.length >= 1 },
+      { icon: '🔥', title: 'Série de 3 jours', test: () => state.activity.bestStreak >= 3 },
+      { icon: '🟧', title: '10 cours HTML', test: () => getLanguageProgress('html').completed >= 10 },
+      { icon: '🟪', title: '10 cours PHP', test: () => getLanguageProgress('php').completed >= 10 },
+      { icon: '⚡', title: 'Premier Sprint', test: () => state.gameStats.sessions >= 1 },
+      { icon: '👑', title: 'Maître CodeQuest', test: () => state.completedLessonIds.length === COURSE_CATALOG.lessons.length }
+    ];
+
+    function renderAccountDashboard() {
+      const initial = activeAccount.name.trim().charAt(0).toLocaleUpperCase('fr') || 'J';
+      const level = playerLevel();
+      const inLevel = xpInsideLevel();
+      $('profile-avatar-large').textContent = initial;
+      $('profile-name-large').textContent = activeAccount.name;
+      $('profile-level-label').textContent = `Niveau ${level}`;
+      $('profile-xp-label').textContent = `${state.xp} XP`;
+      $('profile-next-level').textContent = `${XP_PER_LEVEL - inLevel} XP avant le niveau ${level + 1}`;
+      $('profile-xp-bar').style.width = `${inLevel / XP_PER_LEVEL * 100}%`;
+      $('stat-completed').textContent = `${state.completedLessonIds.length} / ${COURSE_CATALOG.lessons.length}`;
+      $('stat-streak').textContent = `${state.activity.streak} jour${state.activity.streak > 1 ? 's' : ''}`;
+      $('stat-best-score').textContent = state.gameStats.bestScore;
+      $('stat-game-correct').textContent = state.gameStats.totalCorrect;
+
+      $('language-progress').innerHTML = LANGUAGE_ORDER.map(languageId => {
+        const language = COURSE_CATALOG.languages[languageId];
+        const progress = getLanguageProgress(languageId);
+        const percent = progress.total ? progress.completed / progress.total * 100 : 0;
+        const color = languageId === 'php' ? 'from-indigo-500 to-violet-400' : 'from-orange-500 to-amber-300';
+        return `<div><div class="mb-2 flex items-center justify-between text-xs"><span class="font-bold text-slate-200">${language.label}</span><span class="font-mono text-slate-500">${progress.completed} / ${progress.total}</span></div><div class="h-2 overflow-hidden rounded-full bg-ink-950"><div class="h-full rounded-full bg-gradient-to-r ${color}" style="width:${percent}%"></div></div></div>`;
+      }).join('');
+
+      $('achievements-list').innerHTML = ACHIEVEMENTS.map(achievement => {
+        const unlocked = achievement.test();
+        return `<div class="${unlocked ? 'achievement-unlocked' : 'achievement-locked'} rounded-xl border p-3"><span class="text-lg ${unlocked ? '' : 'grayscale opacity-40'}">${achievement.icon}</span><p class="mt-1 text-[10px] font-bold leading-4">${escapeHtml(achievement.title)}</p></div>`;
+      }).join('');
+
+      $('profile-list').innerHTML = accountStore.accounts.map(account => {
+        const isActive = account.id === activeAccount.id;
+        const accountState = normalizeState(account.state);
+        return `<div class="flex items-center gap-3 rounded-xl border ${isActive ? 'border-brand-400/35 bg-brand-400/[.07]' : 'border-slate-700 bg-ink-950'} p-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-800 text-xs font-black text-white">${escapeHtml(account.name.charAt(0).toLocaleUpperCase('fr') || 'J')}</span><div class="min-w-0 flex-1"><p class="truncate text-xs font-bold text-white">${escapeHtml(account.name)}</p><p class="text-[9px] text-slate-500">${accountState.completedLessonIds.length} cours · niveau ${Math.floor(accountState.xp / XP_PER_LEVEL) + 1}</p></div>${isActive ? '<span class="rounded-full bg-emerald-400/10 px-2 py-1 text-[9px] font-bold text-emerald-300">ACTIF</span>' : `<button data-switch-profile="${account.id}" class="min-h-9 rounded-lg border border-brand-400/25 px-3 text-[10px] font-bold text-brand-300">Choisir</button><button data-delete-profile="${account.id}" class="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-red-400/10 hover:text-red-300" title="Supprimer">✕</button>`}</div>`;
+      }).join('');
+      renderAccountHeader();
+    }
+
+    function openAccountModal() {
+      renderAccountDashboard();
+      $('account-modal').classList.remove('hidden');
+      $('account-modal').classList.add('flex');
+    }
+
+    function closeAccountModal() {
+      $('account-modal').classList.add('hidden');
+      $('account-modal').classList.remove('flex');
+      $('backup-status').textContent = '';
+    }
+
+    function switchProfile(profileId) {
+      const nextAccount = accountStore.accounts.find(account => account.id === profileId);
+      if (!nextAccount || nextAccount.id === activeAccount.id) return;
+      saveState();
+      activeAccount = nextAccount;
+      accountStore.activeId = nextAccount.id;
+      state = normalizeState(nextAccount.state);
+      registerDailyActivity();
+      currentIndex = Math.max(0, COURSE_CATALOG.lessons.findIndex(lesson => lesson.id === state.currentLessonId));
+      currentIndex = Math.min(currentIndex, getAccessibleLessonIndex());
+      selectedBookIndex = currentIndex;
+      taskStatesByLesson.clear();
+      renderLesson();
+      renderAccountDashboard();
+    }
+
+    function createNewProfile(name) {
+      const profile = createProfile(name);
+      accountStore.accounts.push(profile);
+      switchProfile(profile.id);
+    }
+
+    function deleteProfile(profileId) {
+      const profile = accountStore.accounts.find(account => account.id === profileId);
+      if (!profile || profile.id === activeAccount.id || accountStore.accounts.length <= 1) return;
+      if (!confirm(`Supprimer le profil « ${profile.name} » et toute sa progression ?`)) return;
+      accountStore.accounts = accountStore.accounts.filter(account => account.id !== profileId);
+      saveState();
+      renderAccountDashboard();
+    }
+
+    function exportBackup() {
+      saveState();
+      const payload = { app: 'CodeQuest Academy', version: 2, exportedAt: new Date().toISOString(), accountStore };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `codequest-backup-${localDateKey()}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      $('backup-status').textContent = 'Sauvegarde exportée. Conservez ce fichier pour un autre appareil.';
+      $('backup-status').className = 'mt-3 min-h-5 text-xs text-emerald-300';
+    }
+
+    async function importBackup(file) {
+      if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        const imported = parsed.accountStore || parsed;
+        if (!Array.isArray(imported.accounts) || !imported.accounts.length) throw new Error('Format invalide');
+        if (!confirm('Remplacer les profils de cet appareil par cette sauvegarde ?')) return;
+        const accounts = imported.accounts.map(account => ({ ...account, id: account.id || createProfileId(), name: String(account.name || 'Joueur').slice(0, 24), state: normalizeState(account.state) }));
+        accountStore = { version: 2, accounts, activeId: accounts.some(account => account.id === imported.activeId) ? imported.activeId : accounts[0].id };
+        activeAccount = accounts.find(account => account.id === accountStore.activeId) || accounts[0];
+        state = normalizeState(activeAccount.state);
+        registerDailyActivity();
+        currentIndex = Math.max(0, COURSE_CATALOG.lessons.findIndex(lesson => lesson.id === state.currentLessonId));
+        currentIndex = Math.min(currentIndex, getAccessibleLessonIndex());
+        renderLesson();
+        renderAccountDashboard();
+        $('backup-status').textContent = `${accounts.length} profil${accounts.length > 1 ? 's' : ''} importé${accounts.length > 1 ? 's' : ''} avec succès.`;
+        $('backup-status').className = 'mt-3 min-h-5 text-xs text-emerald-300';
+      } catch {
+        $('backup-status').textContent = 'Impossible de lire cette sauvegarde. Vérifiez le fichier JSON.';
+        $('backup-status').className = 'mt-3 min-h-5 text-xs text-red-300';
+      } finally {
+        $('import-backup').value = '';
+      }
+    }
+
+    /* ================================================================
+       6. MODE SPRINT RÉVISION
+       ================================================================ */
+    function completedLessonsForGame() {
+      return COURSE_CATALOG.lessons.filter(lesson => state.completedLessonIds.includes(lesson.id));
+    }
+
+    function shuffled(values) {
+      const copy = [...values];
+      for (let index = copy.length - 1; index > 0; index--) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+      }
+      return copy;
+    }
+
+    function showGameSection(sectionId) {
+      ['game-home', 'game-play', 'game-result'].forEach(id => $(id).classList.toggle('hidden', id !== sectionId));
+      $('game-play').classList.toggle('flex', sectionId === 'game-play');
+    }
+
+    function renderGameHome() {
+      const available = completedLessonsForGame().length;
+      $('game-home-lessons').textContent = available;
+      $('game-home-best').textContent = state.gameStats.bestScore;
+      $('start-game').disabled = available === 0;
+      $('game-lock-message').textContent = available
+        ? `${Math.min(5, available)} défi${Math.min(5, available) > 1 ? 's' : ''} seront tirés parmi vos ${available} cours réussis.`
+        : 'Terminez au moins une leçon pour débloquer le Sprint Révision.';
+      showGameSection('game-home');
+    }
+
+    function openGame() {
+      renderGameHome();
+      $('game-modal').classList.remove('hidden');
+      $('game-modal').classList.add('flex');
+    }
+
+    function closeGame() {
+      $('game-modal').classList.add('hidden');
+      $('game-modal').classList.remove('flex');
+      gameSession = null;
+    }
+
+    function startGame() {
+      const available = completedLessonsForGame();
+      if (!available.length) return;
+      gameSession = {
+        challenges: shuffled(available).slice(0, Math.min(5, available.length)),
+        index: 0,
+        score: 0,
+        lives: 3,
+        attempts: 0,
+        correct: 0,
+        roundStartedAt: Date.now()
+      };
+      showGameSection('game-play');
+      loadGameRound();
+    }
+
+    function loadGameRound() {
+      if (!gameSession || gameSession.index >= gameSession.challenges.length) return finishGame(true);
+      const lesson = gameSession.challenges[gameSession.index];
+      const language = COURSE_CATALOG.languages[lesson.language];
+      gameSession.attempts = 0;
+      gameSession.roundStartedAt = Date.now();
+      $('game-round').textContent = `Défi ${gameSession.index + 1} / ${gameSession.challenges.length}`;
+      $('game-score').textContent = `Score ${gameSession.score}`;
+      $('game-lives').textContent = '♥'.repeat(gameSession.lives) + '♡'.repeat(3 - gameSession.lives);
+      $('game-language').textContent = language.label;
+      $('game-lesson-title').textContent = lesson.title;
+      $('game-mission').textContent = lesson.mission;
+      $('game-requirements').innerHTML = lesson.requirements.map(item => `<li class="flex gap-2"><span class="text-violet-300">○</span><span>${item}</span></li>`).join('');
+      $('game-feedback').classList.add('hidden');
+      $('check-game').dataset.mode = 'check';
+      $('check-game').textContent = 'Vérifier le défi';
+      gameEditor.setOption('mode', language.mode);
+      gameEditor.setOption('autoCloseTags', lesson.language === 'html');
+      gameEditor.setValue(lesson.starter);
+      gameEditor.clearHistory();
+      setTimeout(() => { gameEditor.refresh(); gameEditor.focus(); }, 60);
+    }
+
+    function checkGameChallenge() {
+      if (!gameSession) return;
+      if ($('check-game').dataset.mode === 'next') {
+        gameSession.index++;
+        return loadGameRound();
+      }
+
+      const lesson = gameSession.challenges[gameSession.index];
+      const failedRules = lesson.rules.filter(rule => !rule.regex.test(gameEditor.getValue()));
+      const feedback = $('game-feedback');
+      feedback.classList.remove('hidden', 'border-red-400/25', 'bg-red-400/[.06]', 'text-red-100', 'border-emerald-400/25', 'bg-emerald-400/[.06]', 'text-emerald-100');
+
+      if (failedRules.length) {
+        gameSession.attempts++;
+        gameSession.lives--;
+        $('game-lives').textContent = '♥'.repeat(Math.max(0, gameSession.lives)) + '♡'.repeat(Math.max(0, 3 - gameSession.lives));
+        feedback.classList.add('border-red-400/25', 'bg-red-400/[.06]', 'text-red-100');
+        feedback.innerHTML = `<strong>Vie perdue.</strong><br>${escapeHtml(failedRules[0].hint)}`;
+        if (gameSession.lives <= 0) setTimeout(() => finishGame(false), 700);
+        return;
+      }
+
+      const seconds = Math.floor((Date.now() - gameSession.roundStartedAt) / 1000);
+      const roundScore = Math.max(60, 180 - seconds * 2 - gameSession.attempts * 20);
+      gameSession.score += roundScore;
+      gameSession.correct++;
+      $('game-score').textContent = `Score ${gameSession.score}`;
+      feedback.classList.add('border-emerald-400/25', 'bg-emerald-400/[.06]', 'text-emerald-100');
+      feedback.innerHTML = `<strong>Défi réussi !</strong><br>+${roundScore} points · ${seconds}s`;
+      $('check-game').dataset.mode = 'next';
+      $('check-game').textContent = gameSession.index === gameSession.challenges.length - 1 ? 'Voir le résultat' : 'Défi suivant →';
+    }
+
+    function finishGame(completedSession) {
+      if (!gameSession) return;
+      const xpReward = gameSession.correct * 25 + (completedSession && gameSession.correct ? 25 : 0);
+      state.xp += xpReward;
+      state.gameStats.sessions++;
+      state.gameStats.totalCorrect += gameSession.correct;
+      state.gameStats.bestScore = Math.max(state.gameStats.bestScore, gameSession.score);
+      saveState();
+      renderNavigation();
+      $('game-result-score').textContent = gameSession.score;
+      $('game-result-correct').textContent = `${gameSession.correct}/${gameSession.challenges.length}`;
+      $('game-result-xp').textContent = `+${xpReward}`;
+      $('game-result-summary').textContent = completedSession ? 'Vous avez terminé la sélection de révision.' : 'Vous n’avez plus de vies, mais chaque tentative renforce la mémoire.';
+      showGameSection('game-result');
+    }
+
+    /* ================================================================
+       7. LIVRE DES LEÇONS ET ÉVÉNEMENTS
        ================================================================ */
     function renderLessonBookList(query = '') {
       const normalized = query.trim().toLocaleLowerCase('fr');
@@ -1467,6 +1950,32 @@
     }
 
     $('suggestion-accept').addEventListener('click', acceptTabCompletion);
+    $('account-btn').addEventListener('click', openAccountModal);
+    $('close-account').addEventListener('click', closeAccountModal);
+    $('account-modal').addEventListener('click', event => { if (event.target === $('account-modal')) closeAccountModal(); });
+    $('create-profile-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const name = $('new-profile-name').value.trim();
+      if (!name) return;
+      createNewProfile(name);
+      $('new-profile-name').value = '';
+    });
+    $('profile-list').addEventListener('click', event => {
+      const switchButton = event.target.closest('[data-switch-profile]');
+      const deleteButton = event.target.closest('[data-delete-profile]');
+      if (switchButton) switchProfile(switchButton.dataset.switchProfile);
+      if (deleteButton) deleteProfile(deleteButton.dataset.deleteProfile);
+    });
+    $('export-backup').addEventListener('click', exportBackup);
+    $('import-backup').addEventListener('change', event => importBackup(event.target.files?.[0]));
+
+    $('game-btn').addEventListener('click', openGame);
+    $('close-game').addEventListener('click', closeGame);
+    $('game-modal').addEventListener('click', event => { if (event.target === $('game-modal')) closeGame(); });
+    $('start-game').addEventListener('click', startGame);
+    $('check-game').addEventListener('click', checkGameChallenge);
+    $('replay-game').addEventListener('click', startGame);
+    $('finish-game').addEventListener('click', closeGame);
     $('result-tab').addEventListener('click', () => {
       if (window.innerWidth > MOBILE_BREAKPOINT || document.body.dataset.mobileView !== 'code') return;
       const collapsed = document.body.classList.toggle('preview-collapsed');
@@ -1518,12 +2027,19 @@
     editor.on('blur', () => setTimeout(updateKeyboardState, 120));
     window.visualViewport?.addEventListener('resize', updateKeyboardState);
     window.addEventListener('resize', updateKeyboardState);
-    document.addEventListener('keydown', event => { if (event.key === 'Escape') closeGlossary(); });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      closeGlossary();
+      closeAccountModal();
+      closeGame();
+    });
     $('reset-btn').addEventListener('click', () => {
-      if (!confirm('Réinitialiser toute la progression et tous les brouillons ?')) return;
-      localStorage.removeItem(STORAGE_KEY);
+      if (!confirm(`Réinitialiser la progression et les brouillons du profil « ${activeAccount.name} » ?`)) return;
       state = structuredClone(defaultState);
+      registerDailyActivity();
       currentIndex = 0;
+      taskStatesByLesson.clear();
+      saveState();
       renderLesson();
     });
 
